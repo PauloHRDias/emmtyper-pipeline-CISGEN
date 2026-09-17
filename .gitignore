@@ -1,0 +1,52 @@
+# ============================================
+# Logs
+# ============================================
+logs/
+
+# ============================================
+# Resultados (ignorar conteúdo, manter estrutura)
+# ============================================
+resultados/*
+!resultados/.gitkeep
+!resultados/resultados_emm_resumo.tsv
+
+resultados_blast/*
+!resultados_blast/.gitkeep
+
+resultados_pcr/*
+!resultados_pcr/.gitkeep
+
+# ============================================
+# Dados brutos e assemblies
+# ============================================
+*.fna
+*.fa
+*.fasta
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+!entrada/*.fna
+
+# ============================================
+# Bancos e índices BLAST
+# ============================================
+*.nhr
+*.nin
+*.nsq
+*.ndb
+*.not
+*.ntf
+*.nto
+
+# ============================================
+# Arquivos temporários
+# ============================================
+*.tmp
+__pycache__/
+.DS_Store
+
+# ============================================
+# Configuração pessoal
+# ============================================
+config.sh
