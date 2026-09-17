@@ -12,10 +12,15 @@ A pesquisa de fatores de virulência com VFDB é uma etapa independente e não u
 text
 teste_emmtyper/
 ├── entrada/
+
 │   └── GCF_022869605.1_ASM2286960v1_genomic.fna
+
 ├── logs/
+
 ├── resultados_blast/
+
 ├── resultados_pcr/
+
 └── README.md
 
 
@@ -166,15 +171,25 @@ Arquive, juntamente com o resultado, os arquivos emmtyper_help.txt, referencias_
  1 Criado estrutura organizada de diretórios para Entradas, logs e resultados 
 ~/teste_emmtyper/
 ├── entrada/
+
 │   └── GCF_022869605.1_ASM2286960v1_genomic.fna
+
 ├── logs/
+
 │   ├── emmtyper_blast.stderr.log
+
 │   └── emmtyper_pcr.stderr.log
+
 ├── resultados_blast/
+
 │   └── emmtyper_blast.stdout.log
+
 ├── resultados_pcr/
+
 │   └── emmtyper_pcr.stdout.log
+
 ├── GCF_022869605.tmp
+
 └── GCF_022869605_pcr.tmp
 
 ## Fluxo executado
