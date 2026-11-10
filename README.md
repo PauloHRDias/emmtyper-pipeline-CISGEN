@@ -100,6 +100,12 @@ A lista curada de artigos sobre vigilância genômica de *S. pyogenes* e sobre I
 em biologia, com referências em ABNT, relevância para o TCC e ordem de leitura, está em
 [`docs/referencias_curadas.md`](docs/referencias_curadas.md).
 
+### Documentos do TCC
+
+- [`docs/tcc_revisado.md`](docs/tcc_revisado.md): texto do TCC com as citações e as referências ABNT.
+- [`docs/tcc_revisado.html`](docs/tcc_revisado.html): versão formatada para importar no Google Docs ou Word.
+- [`docs/referencias_tcc_abnt.md`](docs/referencias_tcc_abnt.md): somente a lista de referências, para colar direto no documento.
+
 ## O que cada script faz
 
 | Script | Função |
