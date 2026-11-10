@@ -1,21 +1,17 @@
 #!/bin/bash
 #
-# Pipeline de vigilancia genomica de Streptococcus pyogenes (CISGEN/SC).
+# Pipeline de vigilancia genomica de Streptococcus pyogenes (CIGenS/SC).
 #
 # Para cada assembly em entrada/*.fna:
-#   1. tipagem emm (emmtyper, workflow BLAST)
-#   2. perfil de virulencia (blastn contra o VFDB)
-#   3. (opcional) tipagem por PCR in silico
+#   1. QC basico de montagem
+#   2. tipagem emm (emmtyper, workflow BLAST)
+#   3. perfil de virulencia (blastn contra o VFDB)
+#   4. (opcional) tipagem por PCR in silico
 # Ao final:
-#   4. consolidacao da tabela (emm + virulencia reais)
-#   5. laudos epidemiologicos via Ollama (por defeito)
-#
-# Uso:
-#   ./pipeline_principal.sh                 # lote completo + laudos
-#   ./pipeline_principal.sh --sem-laudos    # apenas tipagem/consolidacao
-#   ./pipeline_principal.sh --pcr           # inclui PCR in silico
-#   ./pipeline_principal.sh --amostra entrada/GCF_XXXX.fna
-#   ./pipeline_principal.sh --help
+#   5. consolidacao da tabela (emm + virulencia reais)
+#   6. juncao de metadados clinico-epidemiologicos (opcional)
+#   7. laudos epidemiologicos via Ollama (por defeito)
+#   8. relatorio resumido do lote
 
 set -u
 
@@ -24,17 +20,45 @@ cd "$RAIZ" || exit 1
 source "$RAIZ/config.sh"
 
 USAR_PCR=0
+USAR_QC=1
 GERAR_LAUDOS=1
+GERAR_RELATORIO=1
+METADADOS=""
 AMOSTRAS=()
 
 uso() {
-  sed -n '3,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  cat <<'EOF'
+Uso: ./pipeline_principal.sh [opcoes]
+
+  (sem opcoes)          lote completo: QC + tipagem + VFDB + laudos + relatorio
+  --sem-laudos          pula a geracao de laudos (mais rapido)
+  --sem-qc              pula o QC basico de montagem
+  --sem-relatorio       pula o relatorio resumido do lote
+  --pcr                 inclui tipagem por PCR in silico
+  --metadados CAMINHO   junta metadados clinico-epidemiologicos (CSV/TSV)
+  --amostra CAMINHO     processa apenas uma amostra
+  -h, --help            mostra esta ajuda
+EOF
 }
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --pcr)          USAR_PCR=1; shift ;;
     --sem-laudos)   GERAR_LAUDOS=0; shift ;;
+    --sem-qc)       USAR_QC=0; shift ;;
+    --sem-relatorio) GERAR_RELATORIO=0; shift ;;
+    --metadados)
+      if [ "$#" -lt 2 ]; then
+        echo "ERRO: --metadados requer um caminho." >&2
+        exit 2
+      fi
+      if [ ! -f "$2" ]; then
+        echo "ERRO: metadados nao encontrados: $2" >&2
+        exit 2
+      fi
+      METADADOS="$2"
+      shift 2
+      ;;
     --amostra)
       if [ "$#" -lt 2 ]; then
         echo "ERRO: --amostra requer um caminho." >&2
@@ -71,8 +95,22 @@ fi
 
 echo "=============================================================="
 echo " Pipeline de vigilancia genomica - $(date '+%Y-%m-%d %H:%M:%S')"
-echo " Amostras: ${#AMOSTRAS[@]} | PCR: $USAR_PCR | Laudos: $GERAR_LAUDOS"
+echo " Amostras: ${#AMOSTRAS[@]} | PCR: $USAR_PCR | QC: $USAR_QC | Laudos: $GERAR_LAUDOS"
 echo "=============================================================="
+
+QC_TSV="$RAIZ/resultados_consolidados/qc_montagem.tsv"
+if [ "$USAR_QC" -eq 1 ]; then
+  echo
+  echo "=============================================================="
+  echo " QC basico de montagem"
+  echo "=============================================================="
+  "$CONDA_PREFIX/bin/python" "$RAIZ/scripts/qc_montagem.py" \
+    --saida "$QC_TSV" "${AMOSTRAS[@]}"
+  STATUS_QC=$?
+  if [ "$STATUS_QC" -ne 0 ]; then
+    echo "AVISO: o QC de montagem terminou com codigo $STATUS_QC." >&2
+  fi
+fi
 
 PROCESSADAS=0
 FALHAS=0
@@ -187,6 +225,29 @@ if [ "$STATUS_CONSOLIDACAO" -ne 0 ]; then
   exit 1
 fi
 
+TABELA_FINAL="$SAIDA_EPIBUILDER"
+if [ -n "$METADADOS" ]; then
+  echo
+  echo "=============================================================="
+  echo " Juntando metadados clinico-epidemiologicos"
+  echo "=============================================================="
+  TABELA_FINAL="$RAIZ/resultados_consolidados/epibuilder_completo.tsv"
+  QC_ARG=""
+  if [ "$USAR_QC" -eq 1 ]; then
+    QC_ARG="$QC_TSV"
+  fi
+  "$CONDA_PREFIX/bin/python" "$RAIZ/scripts/juntar_metadados.py" \
+    --genomico "$SAIDA_EPIBUILDER" \
+    --metadados "$METADADOS" \
+    --qc "$QC_ARG" \
+    --saida "$TABELA_FINAL"
+  STATUS_META=$?
+  if [ "$STATUS_META" -ne 0 ]; then
+    echo "AVISO: a juncao de metadados falhou (codigo $STATUS_META); a usar apenas a tabela genomica." >&2
+    TABELA_FINAL="$SAIDA_EPIBUILDER"
+  fi
+fi
+
 if [ "$GERAR_LAUDOS" -eq 1 ]; then
   echo
   echo "=============================================================="
@@ -200,14 +261,36 @@ if [ "$GERAR_LAUDOS" -eq 1 ]; then
   fi
 fi
 
+if [ "$GERAR_RELATORIO" -eq 1 ]; then
+  echo
+  echo "=============================================================="
+  echo " Gerando relatorio resumido do lote"
+  echo "=============================================================="
+  ARQ_LAUDOS_RELATORIO=""
+  if [ "$GERAR_LAUDOS" -eq 1 ]; then
+    ARQ_LAUDOS_RELATORIO="$RAIZ/resultados_consolidados/laudos.txt"
+  fi
+  "$CONDA_PREFIX/bin/python" "$RAIZ/scripts/relatorio_lote.py" \
+    --tabela "$TABELA_FINAL" \
+    --laudos "$ARQ_LAUDOS_RELATORIO" \
+    --vfdb "$RAIZ/banco_dados/VFDB_S.pyogenes.fas" \
+    --saida "$RAIZ/resultados_consolidados/relatorio_lote.md"
+  STATUS_RELATORIO=$?
+  if [ "$STATUS_RELATORIO" -ne 0 ]; then
+    echo "AVISO: o relatorio do lote terminou com codigo $STATUS_RELATORIO." >&2
+  fi
+fi
+
 echo
 echo "=============================================================="
 echo " Resumo: $PROCESSADAS processada(s), $FALHAS falha(s)"
 if [ "$FALHAS" -gt 0 ]; then
   printf '  - %s\n' "${FALHAS_LISTA[@]}"
 fi
-echo " Tabela: $SAIDA_EPIBUILDER"
+[ "$USAR_QC" -eq 1 ] && echo " QC: $QC_TSV"
+echo " Tabela: $TABELA_FINAL"
 [ "$GERAR_LAUDOS" -eq 1 ] && echo " Laudos: $RAIZ/resultados_consolidados/laudos.txt"
+[ "$GERAR_RELATORIO" -eq 1 ] && echo " Relatorio: $RAIZ/resultados_consolidados/relatorio_lote.md"
 echo "=============================================================="
 
 [ "$FALHAS" -eq 0 ] || exit 1

@@ -1,12 +1,13 @@
-# Vigilância Genômica de *Streptococcus pyogenes* (CISGEN/SC)
+# Vigilância Genômica de *Streptococcus pyogenes* (CIGenS/SC)
 
-Pipeline reprodutível para **tipagem *emm***, **perfil de virulência (VFDB)** e **laudos epidemiológicos automatizados** de assemblies de *S. pyogenes*.
+Pipeline reprodutível para **QC de montagem**, **tipagem *emm***, **perfil de virulência (VFDB)**, **laudos epidemiológicos automatizados** e **relatório de lote** de assemblies de *S. pyogenes*.
 
 ## O que a pipeline faz
 
 ```text
 entrada/*.fna
    │
+   ├── QC de montagem ────────► qc_montagem.tsv
    ├── emmtyper (BLAST) ──────► tipo emm
    ├── blastn contra VFDB ────► genes de virulência
    └── (opcional) PCR in silico
@@ -14,9 +15,17 @@ entrada/*.fna
    ▼
 resultados_consolidados/epibuilder_metadata.tsv
    │
+   ├── metadados clínico-epidemiológicos (opcional)
    ▼
-laudos via Ollama (llama3:8b) ──► resultados_consolidados/laudos.txt
+resultados_consolidados/epibuilder_completo.tsv
+   │
+   ├── laudos via Ollama (llama3:8b) ──► laudos.txt
+   └── relatório do lote ──────────────► relatorio_lote.md
 ```
+
+A montagem e a anotação (Dorado → Flye → Medaka → QUAST/NanoPlot → Prokka) ocorrem
+**a montante** deste repositório. A visão completa do fluxo de vigilância está em
+[`docs/arquitetura_vigilancia.md`](docs/arquitetura_vigilancia.md).
 
 ## Requisitos
 
@@ -33,11 +42,18 @@ Se necessário, copie `config.example.sh` para `config.sh` e ajuste os caminhos.
 ```bash
 cd ~/teste_emmtyper
 
-# Lote completo: tipagem + virulência + consolidação + laudos
+# Lote completo: QC + tipagem + virulência + consolidação + laudos + relatório
 ./pipeline_principal.sh
 
 # Apenas tipagem/virulência/consolidação (sem laudos)
 ./pipeline_principal.sh --sem-laudos
+
+# Com metadados clínico-epidemiológicos (CSV ou TSV)
+./pipeline_principal.sh --metadados docs/metadados_exemplo.tsv
+
+# Pular QC de montagem ou relatório do lote
+./pipeline_principal.sh --sem-qc
+./pipeline_principal.sh --sem-relatorio
 
 # Incluir PCR in silico
 ./pipeline_principal.sh --pcr
@@ -82,8 +98,11 @@ negativos foram removidas de `entrada/`.
 
 | Script | Função |
 |---|---|
-| `pipeline_principal.sh` | Orquestra o lote: emmtyper → VFDB → consolidação → laudos. |
+| `pipeline_principal.sh` | Orquestra o lote: QC → emmtyper → VFDB → consolidação → metadados → laudos → relatório. |
+| `scripts/qc_montagem.py` | QC básico de montagem (contigs, tamanho, N50, GC, Ns). |
 | `scripts/consolidar_lote.py` | Monta a tabela final com emm e virulência **reais**. |
+| `scripts/juntar_metadados.py` | Junta QC e metadados clínico-epidemiológicos por `ID_Amostra`. |
+| `scripts/relatorio_lote.py` | Gera o relatório Markdown resumido do lote. |
 | `scripts/prepara_epibuilder.py` | Parsers de emm/VFDB e geração individual da tabela. |
 | `scripts/vigilancia_bot.py` | Gera os laudos via Ollama para as amostras de *S. pyogenes*. |
 | `scripts/rag_vigilancia.py` | Constrói o dicionário de genes do VFDB (diagnóstico). |
@@ -97,10 +116,11 @@ teste_emmtyper/
 ├── banco_dados/
 │   ├── VFDB_S.pyogenes.fas
 │   └── vfdb_pyogenes_index.*    # índice BLAST do VFDB
+├── docs/                        # painel de validação, arquitetura e metadados de exemplo
 ├── scripts/
 ├── resultados_blast/            # logs do emmtyper e BLAST bruto
 ├── resultados_pcr/              # saídas do PCR in silico (opcional)
-├── resultados_consolidados/     # tabela final e laudos
+├── resultados_consolidados/     # QC, tabela final, laudos e relatório
 ├── logs/                        # stderr e logs de execução
 ├── config.sh                    # configuração local (não versionada)
 └── pipeline_principal.sh
@@ -108,12 +128,27 @@ teste_emmtyper/
 
 ## Saídas esperadas
 
+- `resultados_consolidados/qc_montagem.tsv` — QC de montagem por amostra.
 - `resultados_blast/<ID>_emm.stdout.log` — saída do emmtyper por amostra.
 - `resultados_consolidados/<ID>_vfdb.tsv` — hits do blastn contra o VFDB.
 - `resultados_consolidados/epibuilder_metadata.tsv` — tabela consolidada:
   `ID_Amostra`, `Tipo_EMM`, `Perfil_Virulencia`.
+- `resultados_consolidados/epibuilder_completo.tsv` — tabela + QC + metadados
+  (quando `--metadados` é usado).
 - `resultados_consolidados/laudos.txt` — laudos gerados pelo Ollama.
+- `resultados_consolidados/relatorio_lote.md` — relatório resumido do lote.
 - `logs/<ID>_*.stderr.log` — erros e avisos por etapa.
+
+## Metadados clínico-epidemiológicos
+
+Use `--metadados CAMINHO` com um CSV ou TSV que tenha uma coluna de identificação
+(`ID_Amostra`, `ID`, `Amostra`, `Sample` ou `sample_id`). Colunas recomendadas:
+`Data_Coleta`, `Municipio`, `UF`, `Sitio_Anatomico`, `Desfecho`, `Idade` e `Sexo`.
+Um exemplo está em [`docs/metadados_exemplo.tsv`](docs/metadados_exemplo.tsv).
+
+Amostras sem metadados recebem `NA`; metadados sem assembly correspondente são
+apenas reportados. **Dados clínicos reais não devem ser versionados** — mantenha-os
+fora do repositório (ver `.gitignore`).
 
 ## Classificação das amostras
 
@@ -144,9 +179,12 @@ Python, garantindo reprodutibilidade:
 
 | Tag | Critério |
 |---|---|
-| `[ALERTA VERMELHO]` | presença de toxina superantigénica (`speA`, `speB`, `speC`, `speG`, `speI`, `ssa`, ...) |
+| `[ALERTA VERMELHO]` | presença de toxina superantigénica (`speA`, `speC`, `speD`, `speG`, `speH`, `speI`, `speJ`, `speK`, `speL`, `speM`, `ssa`, `smeZ`) |
 | `[ALERTA AMARELO]` | evasão imune/adesão sem toxina superantigénica |
 | `[PERFIL ENDÉMICO PADRÃO]` | risco basal |
+
+> `speB` é uma protease de cisteína, não um superantigénio, e por isso **não**
+> entra no critério de alerta vermelho.
 
 Variáveis de ambiente opcionais:
 

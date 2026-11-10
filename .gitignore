@@ -58,6 +58,14 @@ __pycache__/
 # ============================================
 config.sh
 
+# ============================================
+# Metadados clínicos reais (não versionar)
+# ============================================
+metadados/
+dados_clinicos/
+docs/metadados_reais*
+!docs/metadados_exemplo.tsv
+
 # ===========================================
 # LLM / RAG (OLLAMA)
 # ===========================================

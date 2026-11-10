@@ -1,0 +1,13 @@
+ID_Amostra	Data_Coleta	Municipio	UF	Sitio_Anatomico	Desfecho	Idade	Sexo
+GCF_000006785	2025-01-15	Florianopolis	SC	Hemocultura	Alta	34	F
+GCF_000167435	2025-01-22	Joinville	SC	Hemocultura	Obito	67	M
+GCF_000756485	2025-02-03	Blumenau	SC	Liquido_pleural	Alta	45	F
+GCF_001014305	2025-02-18	Chapeco	SC	Hemocultura	Alta	28	M
+GCF_001020185	2025-03-05	Criciuma	SC	Liquido_sinovial	Alta	52	F
+GCF_001620285	2025-03-19	Itajai	SC	Hemocultura	Obito	71	M
+GCF_001635895	2025-04-02	Lages	SC	Liquido_cefalorraquidiano	Alta	19	F
+GCF_001635975	2025-04-21	Balneario_Camboriu	SC	Hemocultura	Alta	38	M
+GCF_002355175	2025-05-08	Florianopolis	SC	Tecido_necrose	Obito	63	F
+GCF_003640605	2025-05-27	Joinville	SC	Hemocultura	Alta	41	M
+GCF_004135875	2025-06-11	Blumenau	SC	Liquido_pleural	Alta	56	F
+GCF_022869605	2025-06-30	Criciuma	SC	Hemocultura	Alta	24	M

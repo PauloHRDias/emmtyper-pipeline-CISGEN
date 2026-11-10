@@ -3,8 +3,8 @@
 Painel de 12 genomas completos de *S. pyogenes* usado para validar a
 tipagem *emm* e o perfil de virulência (VFDB) da pipeline.
 
-| ID | Linhagem | Tipo emm | Genes VFDB | Estirpe |
-|---|---|---|---:|---|
+| ID | Tipo emm | Genes VFDB | Estirpe |
+|---|---|---:|---|
 | `GCF_000006785` | EMM1.6 | 224 | SF370 (M1 GAS) |
 | `GCF_000167435` | EMM49.1 | 180 | M49 591 |
 | `GCF_000756485` | EMM23.0 | 215 | M23ND |
@@ -23,6 +23,8 @@ tipagem *emm* e o perfil de virulência (VFDB) da pipeline.
 - 12/12 amostras classificadas como *S. pyogenes*.
 - 11 tipos emm distintos: EMM1.0, EMM1.6, EMM23.0, EMM28.0, EMM3.1, EMM4.0, EMM49.1, EMM53.0, EMM6.52, EMM75.0, EMM89.0.
 - 0 falhas de tipagem ou de BLAST.
+- QC de montagem: 12/12 `OK` — 1 contig por amostra, 1,74–1,91 Mb,
+  GC 38,35–38,63%, 0 `N`.
 - Laudos gerados para todas as amostras (ver `resultados_consolidados/laudos.txt`).
 
 ## Proveniência
@@ -43,5 +45,9 @@ controles negativos foram removidas de `entrada/`.
 ## Reprodução
 
 ```bash
+# Lote completo (QC + tipagem + VFDB + laudos + relatório)
 ./pipeline_principal.sh
+
+# Validação rápida com metadados de exemplo (sem laudos)
+./pipeline_principal.sh --sem-laudos --metadados docs/metadados_exemplo.tsv
 ```
