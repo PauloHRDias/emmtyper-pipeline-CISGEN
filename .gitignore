@@ -16,6 +16,9 @@ resultados_blast/*
 resultados_pcr/*
 !resultados_pcr/.gitkeep
 
+resultados_consolidados/*
+!resultados_consolidados/.gitkeep
+
 # ============================================
 # Dados brutos e assemblies
 # ============================================
@@ -27,6 +30,9 @@ resultados_pcr/*
 *.fq
 *.fq.gz
 !entrada/*.fna
+
+# Binário do CLI do NCBI (ferramenta, não dado)
+entrada/datasets
 
 # ============================================
 # Bancos e índices BLAST
@@ -43,6 +49,7 @@ resultados_pcr/*
 # Arquivos temporários
 # ============================================
 *.tmp
+*.log
 __pycache__/
 .DS_Store
 
@@ -54,4 +61,4 @@ config.sh
 # ===========================================
 # LLM / RAG (OLLAMA)
 # ===========================================
-olamma/
+ollama/
