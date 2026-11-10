@@ -65,6 +65,42 @@ cd ~/teste_emmtyper
 ./pipeline_principal.sh --help
 ```
 
+### Teste rápido ao retomar
+
+Se você voltar em outro dia e quiser apenas confirmar que tudo continua funcionando,
+rode o lote de validação **sem laudos** (não depende do Ollama). Se estiver em outra
+máquina ou clone, rode `git pull` e copie `config.example.sh` para `config.sh`
+ajustando os caminhos:
+
+```bash
+cd ~/teste_emmtyper
+./pipeline_principal.sh --sem-laudos --metadados docs/metadados_exemplo.tsv
+```
+
+O teste usa as 12 montagens de `entrada/` e deve terminar com **12/12 amostras
+processadas, 0 falhas, QC 12/12 `OK` e 11 tipos emm distintos**. Confira com:
+
+```bash
+wc -l resultados_consolidados/epibuilder_completo.tsv
+# 13 linhas (cabeçalho + 12 amostras)
+
+tail -n +2 resultados_consolidados/epibuilder_completo.tsv | cut -f2 | sort -u | wc -l
+# 11 tipos emm distintos
+
+grep -c "OK" resultados_consolidados/qc_montagem.tsv
+# 12
+```
+
+Para o teste completo, com laudos:
+
+```bash
+docker start ollama   # se o contêiner estiver parado
+./pipeline_principal.sh --metadados docs/metadados_exemplo.tsv
+```
+
+Os laudos ficam em `resultados_consolidados/laudos.txt` e o resumo em
+`resultados_consolidados/relatorio_lote.md`.
+
 ### Rodar sem depender da sessão SSH
 
 Para deixar o processamento rodando mesmo se você bloquear a tela ou desconectar:
