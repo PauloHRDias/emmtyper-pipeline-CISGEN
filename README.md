@@ -5,7 +5,7 @@ Pipeline reprodutível para tipagem *in silico* do gene *emm* em assemblies gen�
 O pipeline divide-se em três fluxos principais:
 1. **BLAST**: Busca direta no assembly contra as referências *emm*.
 2. **PCR *in silico***: PCR com os primers distribuídos pela ferramenta, seguida de comparação do amplicon contra as referências *emm*.
-3. **Análise de Virulência e Laudo (IA)**: Mapeamento independente de fatores de virulência (VFDB) e geração de laudo clínico via Llama 3 local.
+3. **Análise de Virulência e Laudo (IA)**: Mapeamento independente de fatores de virulência (VFDB) e geração de laudo clínico via `llama3:8b` local.
 
 ## 📂 Estrutura de Diretórios
 
@@ -31,7 +31,7 @@ O assembly em `entrada/` pode ser um link simbólico para o arquivo original, ev
 - `emmtyper 0.2.0` e `blastn` disponíveis no mesmo ambiente.
 - Executável `isPcr`.
 - Assembly em formato FASTA nucleotídico (`.fna`, `.fa` ou `.fasta`).
-- **Módulo de IA:** Docker e contêiner do Ollama configurado com Llama 3.
+- **Módulo de IA:** Docker e contêiner do Ollama configurado com o modelo `llama3:8b`.
 
 ## 🚀 Preparação e Validação
 
@@ -86,7 +86,7 @@ cp GCF_022869605_pcr.tmp resultados_pcr/GCF_022869605.pcr.raw.tsv
 
 ## 🧠 Módulo de Inteligência Artificial Epidemiológica (RAG)
 
-Após a tipagem e extração dos perfis de virulência pelo EpiBuilder, o pipeline utiliza um motor de IA local (Llama 3 via Ollama) para automatizar a geração de laudos epidemiológicos e alertas de vigilância genômica. A arquitetura utiliza **Retrieval-Augmented Generation (RAG)** em conjunto com o LangChain para garantir precisão clínica absoluta e evitar alucinações.
+Após a tipagem e extração dos perfis de virulência pelo EpiBuilder, o pipeline utiliza um motor de IA local (`llama3:8b` via Ollama) para automatizar a geração de laudos epidemiológicos e alertas de vigilância genômica. A arquitetura utiliza **Retrieval-Augmented Generation (RAG)** em conjunto com o LangChain para garantir precisão clínica absoluta e evitar alucinações.
 
 ### Scripts de Integração (`scripts/`)
 * **`testar_ollama.py`**: Diagnóstico e validação da API.
