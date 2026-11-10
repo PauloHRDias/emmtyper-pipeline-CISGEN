@@ -14,8 +14,15 @@ mkdir -p resultados_blast resultados_pcr logs resultados_consolidados scripts
 # 3. Executar o emmtyper (Workflow BLAST)
 echo "A executar emmtyper (Workflow BLAST)..."
 emmtyper --workflow blast --blast_db "$EMMTYPER_DB" --keep "$GENOME" \
-  resultados_blast/emmtyper_blast.stdout.log \
+  > resultados_blast/emmtyper_blast.stdout.log \
   2> logs/emmtyper_blast.stderr.log
+
+STATUS_EMMTYPER=$?
+if [ "$STATUS_EMMTYPER" -ne 0 ]; then
+  echo "ERRO: o emmtyper falhou (código de saída $STATUS_EMMTYPER)." >&2
+  echo "Consulte logs/emmtyper_blast.stderr.log para mais detalhes." >&2
+  exit "$STATUS_EMMTYPER"
+fi
 
 # Guardar o resumo do emmtyper num ficheiro de fácil acesso
 cp resultados_blast/emmtyper_blast.stdout.log resultados_consolidados/resultados_emm_resumo.tsv
@@ -37,5 +44,6 @@ python scripts/prepara_epibuilder.py \
   --emm "resultados_consolidados/resultados_emm_resumo.tsv" \
   --vfdb "$ARQUIVO_VFDB" \
   --out "resultados_consolidados/epibuilder_metadata.tsv"
+
 
 echo "Pipeline concluído! Resultados guardados em resultados_consolidados/"
