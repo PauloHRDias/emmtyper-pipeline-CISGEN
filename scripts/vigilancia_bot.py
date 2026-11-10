@@ -18,8 +18,9 @@ SIMBOLO_RE = re.compile(r"^\(([^()]+)\)")
 ACESSO_RE = re.compile(r"^(gb|ref|emb|dbj|sp|tr)\|")
 
 # Classificação determinística do alerta (não depende do modelo).
+# SpeB é uma protease de cisteína, não um superantigénio; por isso fica fora.
 TOXINAS_SUPERANTIGENICAS = {
-    "spea", "speb", "spec", "sped", "speg", "speh", "spei", "spej",
+    "spea", "spec", "sped", "speg", "speh", "spei", "spej",
     "spek", "spel", "spem", "ssa", "smez",
 }
 GENES_EVASAO_ADESAO = {
@@ -260,7 +261,8 @@ INSTRUÇÕES ESTRITAS:
 1. Baseie-se APENAS nos dados acima. Não invente genes nem funções.
 2. Escreva no máximo 100 palavras, num único parágrafo.
 3. Mencione os mecanismos patogénicos presentes (adesão, evasão imune, toxinas, enzimas), citando 2 a 4 genes da lista como exemplo.
-4. Comece a resposta exatamente com a tag {tag_alerta}. Não altere a classificação calculada.
+4. Associe cada gene citado à categoria correta em que aparece no perfil.
+5. Comece a resposta exatamente com a tag {tag_alerta}. Não altere a classificação calculada e não repita a tag no corpo do texto.
 
 LAUDO:"""
 
