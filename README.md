@@ -125,14 +125,38 @@ Definidos em `config.sh`:
 > torna a cobertura do HSP sempre próxima de zero. A cobertura do sujeito mede
 > corretamente quanto do gene de virulência foi alinhado.
 
+## Laudos (Ollama)
+
+Os laudos são gerados apenas para amostras com tipo `emm` confirmado. Para manter
+a inferência viável em CPU, o perfil de virulência é resumido por categoria do
+VFDB (com poucos genes de exemplo) e a classificação do alerta é calculada em
+Python, garantindo reprodutibilidade:
+
+| Tag | Critério |
+|---|---|
+| `[ALERTA VERMELHO]` | presença de toxina superantigénica (`speA`, `speB`, `speC`, `speG`, `speI`, `ssa`, ...) |
+| `[ALERTA AMARELO]` | evasão imune/adesão sem toxina superantigénica |
+| `[PERFIL ENDÉMICO PADRÃO]` | risco basal |
+
+Variáveis de ambiente opcionais:
+
+| Variável | Padrão | Função |
+|---|---|---|
+| `OLLAMA_MODELO` | `llama3:8b` | modelo do Ollama |
+| `OLLAMA_NUM_THREAD` | `16` | threads de CPU para inferência |
+| `OLLAMA_NUM_PREDICT` | `300` | limite de tokens da resposta |
+| `LAUDO_MAX_GENES` | `24` | genes de exemplo no prompt |
+| `LAUDO_MAX_GENES_CATEGORIA` | `4` | exemplos por categoria |
+
 ## Avisos conhecidos
 
 - O emmtyper emite `UserWarning: The parameter -d is used more than once.` — é
   inofensivo; a pipeline usa apenas parâmetros longos.
 - No workflow PCR pode aparecer `FASTA-Reader: Title ends with at least 20 valid
   nucleotide characters.` — não interrompe a execução.
-- A inferência do Ollama em CPU é lenta (alguns minutos por laudo). Em servidores
-  com carga alta, prefira rodar os laudos em horários de menor uso.
+- A inferência do Ollama em CPU varia com a carga do servidor. Com o perfil
+  resumido, cada laudo leva cerca de 15–30 s em carga moderada; em momentos de
+  carga alta pode levar vários minutos.
 
 ## Reprodutibilidade
 
