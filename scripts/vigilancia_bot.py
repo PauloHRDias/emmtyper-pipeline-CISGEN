@@ -60,7 +60,19 @@ def processar_lote_amostras(caminho_tsv, dicionario_vfdb):
         tipo_emm = amostra.get('Tipo_EMM', 'Desconhecido')
         perfil_raw = str(amostra.get('Perfil_Virulencia', ''))
 
-        genes_raw = perfil_raw.split(';') if perfil_raw and perfil_raw != 'nan' else []
+        # Amostras que nao sao S. pyogenes (ou sem resultado) nao recebem laudo clinico.
+        if tipo_emm in ('NAO_S_PYOGENES', 'NAO_PROCESSADO'):
+            print("\n" + "=" * 70)
+            print(f"AMOSTRA ({amostra_atual}/{total_amostras}): {id_amostra}")
+            print(f"Progresso: [ {percentual:.1f}% ] | Tempo decorrido: {tempo_decorrido:.2f} minutos")
+            if tipo_emm == 'NAO_S_PYOGENES':
+                print("Disposicao: NAO COMPATIVEL COM S. pyogenes (controle negativo). Laudo clinico nao aplicavel.")
+            else:
+                print("Disposicao: SEM RESULTADO DE TIPAGEM. Verifique os logs da amostra.")
+            print("=" * 70 + "\n")
+            continue
+
+        genes_raw = [] if perfil_raw in ('', 'nan', 'Nenhum', 'None') else perfil_raw.split(';')
 
         genes_traduzidos = []
         for gene in genes_raw:

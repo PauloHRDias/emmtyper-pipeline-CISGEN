@@ -1,59 +1,114 @@
-import os
+import argparse
+import csv
 import glob
-import pandas as pd
+import os
+import sys
 
-def consolidar():
-    pasta_resultados = os.path.expanduser("~/teste_emmtyper/resultados_blast")
-    pasta_saida = os.path.expanduser("~/teste_emmtyper/resultados_consolidados")
-    os.makedirs(pasta_saida, exist_ok=True)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from prepara_epibuilder import parse_emmtyper, parse_vfdb
+
+
+def encontrar_log_emm(id_amostra, pasta_blast):
+    """Procura o log de tipagem emm da amostra, incluindo nomes antigos."""
+    candidatos = [
+        os.path.join(pasta_blast, f"{id_amostra}_emm.stdout.log"),
+        os.path.join(pasta_blast, f"{id_amostra}_blast.stdout.log"),
+    ]
+    for caminho in candidatos:
+        if os.path.isfile(caminho):
+            return caminho
+
+    # Compatibilidade com logs antigos: <nome_completo>_blast.stdout.log
+    antigos = sorted(glob.glob(os.path.join(pasta_blast, f"{id_amostra}*_blast.stdout.log")))
+    return antigos[0] if antigos else None
+
+
+def consolidar(entrada_dir, resultados_blast, resultados_vfdb, saida,
+               min_pident=90.0, min_qcov=70.0):
+    genomas = sorted(glob.glob(os.path.join(entrada_dir, "*.fna")))
+    if not genomas:
+        print(f"Erro: nenhum assembly .fna encontrado em {entrada_dir}", file=sys.stderr)
+        return 1
 
     dados = []
+    vistos = set()
 
-    # Procura por todos os ficheiros de log ou resultados gerados
-    logs = glob.glob(os.path.join(pasta_resultados, "*_blast.stdout.log"))
+    for genoma in genomas:
+        id_amostra = os.path.basename(genoma).split(".")[0]
+        if id_amostra in vistos:
+            continue
+        vistos.add(id_amostra)
 
-    if not logs:
-        print("Nenhum log encontrado em resultados_blast/.")
-        return
+        log_emm = encontrar_log_emm(id_amostra, resultados_blast)
+        arq_vfdb = os.path.join(resultados_vfdb, f"{id_amostra}_vfdb.tsv")
 
-    print(f"A consolidar dados de {len(logs)} amostras...")
+        if not log_emm and not os.path.isfile(arq_vfdb):
+            tipo_emm = "NAO_PROCESSADO"
+            perfil = "Nenhum"
+            print(f"AVISO: sem resultados para {id_amostra}", file=sys.stderr)
+        else:
+            tipo_emm = parse_emmtyper(log_emm) if log_emm else None
+            genes = parse_vfdb(arq_vfdb, min_pident, min_qcov) if os.path.isfile(arq_vfdb) else []
 
-    for log_path in logs:
-        nome_base = os.path.basename(log_path).replace("_blast.stdout.log", "")
-
-        # Tenta extrair o tipo emm do log ou define um valor padrão baseado no nome
-        tipo_emm = "EMM_Desconhecido"
-        try:
-            with open(log_path, 'r') as f:
-                for linha in f:
-                    if "emm" in linha.lower():
-                        partes = linha.strip().split()
-                        if len(partes) > 1:
-                            tipo_emm = partes[1]
-                            break
-        except:
-            pass
-
-        if tipo_emm == "EMM_Desconhecido":
-            tipo_emm = f"Linhagem_{nome_base[:10]}"
-
-        # LIMITAÇÃO CONHECIDA (Fase 0): o perfil de virulência abaixo é
-        # SIMULADO/hardcoded, apenas para testar o fluxo dos laudos.
-        # A substituição pelo perfil real (parse do blastn contra o VFDB)
-        # será implementada na Fase 1. NÃO usar para laudos definitivos.
-        perfil_virulencia = "VFG0387:mga; VFG0388:scpA; VFG0389:sfbI; VFG0390:speA; VFG0391:sdaB"
+            if tipo_emm is None and not genes:
+                # Sem gene emm e sem fatores de virulencia de S. pyogenes:
+                # a amostra nao e compativel com S. pyogenes (controle negativo).
+                tipo_emm = "NAO_S_PYOGENES"
+                perfil = "Nenhum"
+            else:
+                tipo_emm = tipo_emm or "Desconhecido"
+                perfil = ";".join(genes) if genes else "Nenhum"
 
         dados.append({
-            'ID_Amostra': nome_base,
-            'Tipo_EMM': tipo_emm,
-            'Perfil_Virulencia': perfil_virulencia
+            "ID_Amostra": id_amostra,
+            "Tipo_EMM": tipo_emm,
+            "Perfil_Virulencia": perfil,
         })
 
-    df_final = pd.DataFrame(dados)
-    caminho_tsv = os.path.join(pasta_saida, "epibuilder_metadata.tsv")
-    df_final.to_csv(caminho_tsv, sep='\t', index=False)
-    print(f"Ficheiro consolidado gerado com sucesso em: {caminho_tsv}")
-    print(f"Total de amostras na tabela: {len(df_final)}")
+    os.makedirs(os.path.dirname(saida) or ".", exist_ok=True)
+    cabecalho = ["ID_Amostra", "Tipo_EMM", "Perfil_Virulencia"]
+    with open(saida, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=cabecalho, delimiter="\t")
+        writer.writeheader()
+        writer.writerows(dados)
+
+    print(f"Tabela consolidada: {saida}")
+    print(f"Amostras na tabela: {len(dados)}")
+    print(f"Limiares VFDB: pident >= {min_pident}% | cobertura >= {min_qcov}%")
+    for linha in dados:
+        n_genes = 0 if linha["Perfil_Virulencia"] == "Nenhum" else len(linha["Perfil_Virulencia"].split(";"))
+        print(f"  - {linha['ID_Amostra']}: emm={linha['Tipo_EMM']} | genes={n_genes}")
+
+    return 0
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Consolida resultados reais de emm e virulencia (VFDB) em uma tabela unica"
+    )
+    parser.add_argument("--entrada-dir", default="entrada",
+                        help="Pasta com os assemblies .fna (padrao: entrada)")
+    parser.add_argument("--resultados-blast", default="resultados_blast",
+                        help="Pasta com os logs do emmtyper (padrao: resultados_blast)")
+    parser.add_argument("--resultados-vfdb", default="resultados_consolidados",
+                        help="Pasta com os TSV do blastn VFDB (padrao: resultados_consolidados)")
+    parser.add_argument("--saida", default="resultados_consolidados/epibuilder_metadata.tsv",
+                        help="Caminho da tabela consolidada")
+    parser.add_argument("--min-pident", type=float, default=90.0,
+                        help="Identidade minima (%%), padrao: 90")
+    parser.add_argument("--min-qcov", type=float, default=70.0,
+                        help="Cobertura minima do sujeito (%%), padrao: 70")
+    args = parser.parse_args()
+
+    sys.exit(consolidar(
+        args.entrada_dir,
+        args.resultados_blast,
+        args.resultados_vfdb,
+        args.saida,
+        args.min_pident,
+        args.min_qcov,
+    ))
+
 
 if __name__ == "__main__":
-    consolidar()
+    main()
