@@ -7,7 +7,7 @@ import time
 
 MODELO_OLLAMA = os.environ.get("OLLAMA_MODELO", "llama3:8b")
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-NUM_PREDICT = int(os.environ.get("OLLAMA_NUM_PREDICT", "160"))
+NUM_PREDICT = int(os.environ.get("OLLAMA_NUM_PREDICT", "300"))
 NUM_THREAD = int(os.environ.get("OLLAMA_NUM_THREAD", "16"))
 LAUDO_MAX_GENES = int(os.environ.get("LAUDO_MAX_GENES", "24"))
 LAUDO_MAX_GENES_CATEGORIA = int(os.environ.get("LAUDO_MAX_GENES_CATEGORIA", "4"))
@@ -16,6 +16,16 @@ VFG_RE = re.compile(r"VFG\d+")
 CATEGORIA_RE = re.compile(r"\[[^\]]*?-\s*([^\[\]()]+?)\s*\(VFC\d+\)\]")
 SIMBOLO_RE = re.compile(r"^\(([^()]+)\)")
 ACESSO_RE = re.compile(r"^(gb|ref|emb|dbj|sp|tr)\|")
+
+# Classificação determinística do alerta (não depende do modelo).
+TOXINAS_SUPERANTIGENICAS = {
+    "spea", "speb", "spec", "sped", "speg", "speh", "spei", "spej",
+    "spek", "spel", "spem", "ssa", "smez",
+}
+GENES_EVASAO_ADESAO = {
+    "emm", "hasa", "hasb", "hasc", "sic", "scpa", "scpb", "scpa/scpb",
+    "ides/mac", "sda", "spycep", "mga", "fbp54", "cpa", "lmb",
+}
 
 
 def _limpar_descricao(descricao):
@@ -150,6 +160,26 @@ def formatar_perfil(grupos, max_total=LAUDO_MAX_GENES,
     return "\n".join(linhas)
 
 
+def classificar_alerta(genes_raw, dicionario_vfdb):
+    """Classifica o alerta a partir dos símbolos detetados.
+
+    A decisão é feita em Python para ser reprodutível; o modelo apenas
+    redige o texto usando a tag já calculada.
+    """
+    simbolos = set()
+    for gene in genes_raw:
+        descricao = dicionario_vfdb.get(gene.strip(), "")
+        simbolo = extrair_simbolo(descricao)
+        if simbolo:
+            simbolos.add(simbolo.lower())
+
+    if simbolos & TOXINAS_SUPERANTIGENICAS:
+        return "[ALERTA VERMELHO]"
+    if simbolos & GENES_EVASAO_ADESAO:
+        return "[ALERTA AMARELO]"
+    return "[PERFIL ENDÉMICO PADRÃO]"
+
+
 def processar_lote_amostras(caminho_tsv, dicionario_vfdb):
     """Lê o TSV consolidado, faz o loop por todas as amostras e gera os laudos via Llama 3"""
     try:
@@ -212,6 +242,8 @@ def processar_lote_amostras(caminho_tsv, dicionario_vfdb):
         if not perfil_formatado:
             perfil_formatado = "Nenhum fator de virulência mapeado."
 
+        tag_alerta = classificar_alerta(genes_raw, dicionario_vfdb)
+
         prompt = f"""Atue como analista de vigilância epidemiológica molecular.
 Responda em português de Portugal, em texto corrido.
 
@@ -219,6 +251,7 @@ DADOS DA AMOSTRA:
 - ID: {id_amostra}
 - Linhagem emm: {tipo_emm}
 - Total de fatores de virulência detetados: {total_genes}
+- Classificação calculada: {tag_alerta}
 
 PERFIL POR CATEGORIA (exemplos representativos):
 {perfil_formatado}
@@ -227,10 +260,7 @@ INSTRUÇÕES ESTRITAS:
 1. Baseie-se APENAS nos dados acima. Não invente genes nem funções.
 2. Escreva no máximo 100 palavras, num único parágrafo.
 3. Mencione os mecanismos patogénicos presentes (adesão, evasão imune, toxinas, enzimas), citando 2 a 4 genes da lista como exemplo.
-4. Inicie a resposta obrigatoriamente com uma destas TAGS:
-   - [ALERTA VERMELHO] (se houver toxinas superantigénicas ou de choque tóxico).
-   - [ALERTA AMARELO] (se houver evasão imune/adesão sem toxinas severas).
-   - [PERFIL ENDÉMICO PADRÃO] (risco basal).
+4. Comece a resposta exatamente com a tag {tag_alerta}. Não altere a classificação calculada.
 
 LAUDO:"""
 
