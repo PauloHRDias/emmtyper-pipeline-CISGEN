@@ -161,6 +161,20 @@ def formatar_perfil(grupos, max_total=LAUDO_MAX_GENES,
     return "\n".join(linhas)
 
 
+def limpar_laudo(texto, tag):
+    """Remove meta-referências à classificação e garante uma única tag."""
+    frases = re.split(r"(?<=[.!?])\s+", texto.strip())
+    frases = [
+        frase for frase in frases
+        if "classificação calculada" not in frase.lower()
+        and "classificacao calculada" not in frase.lower()
+    ]
+    texto = " ".join(frases).strip()
+    texto = texto.replace(tag, "").strip()
+    texto = re.sub(r"\s+", " ", texto)
+    return f"{tag} {texto}".strip()
+
+
 def classificar_alerta(genes_raw, dicionario_vfdb):
     """Classifica o alerta a partir dos símbolos detetados.
 
@@ -276,7 +290,7 @@ LAUDO:"""
         inicio_amostra = time.time()
         try:
             resposta = llm.invoke(prompt)
-            print(resposta)
+            print(limpar_laudo(resposta, tag_alerta))
         except Exception as e:
             print(f"\nFalha na comunicação com o Llama para a amostra {id_amostra}: {e}")
         else:
