@@ -68,6 +68,16 @@ tmux new -s vigilancia
 Bloquear a tela **não** interrompe processos no servidor. O risco é apenas o encerramento
 da sessão SSH; `setsid`/`nohup`/`tmux` protegem contra isso.
 
+## Validação
+
+O painel em `entrada/` contém **12 genomas completos de *S. pyogenes*** com
+**11 tipos emm distintos** (EMM1.0, EMM1.6, EMM3.1, EMM4.0, EMM6.52, EMM23.0,
+EMM28.0, EMM49.1, EMM53.0, EMM75.0 e EMM89.0). O resultado detalhado está em
+[`docs/painel_validacao.md`](docs/painel_validacao.md).
+
+As cinco amostras de outras espécies usadas inicialmente como controles
+negativos foram removidas de `entrada/`.
+
 ## O que cada script faz
 
 | Script | Função |
