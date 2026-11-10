@@ -94,6 +94,12 @@ EMM28.0, EMM49.1, EMM53.0, EMM75.0 e EMM89.0). O resultado detalhado está em
 As cinco amostras de outras espécies usadas inicialmente como controles
 negativos foram removidas de `entrada/`.
 
+## Leituras recomendadas
+
+A lista curada de artigos sobre vigilância genômica de *S. pyogenes* e sobre IA/LLMs
+em biologia, com referências em ABNT, relevância para o TCC e ordem de leitura, está em
+[`docs/referencias_curadas.md`](docs/referencias_curadas.md).
+
 ## O que cada script faz
 
 | Script | Função |
