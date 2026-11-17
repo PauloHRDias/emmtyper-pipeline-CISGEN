@@ -230,7 +230,8 @@ border:1px solid var(--line);overflow:hidden;cursor:grab;height:min(84vh,900px);
 .estado.inativo{opacity:.28}
 .rotulo-estado{font:19px var(--mono);font-weight:700;fill:#0a4f85;pointer-events:none;
 paint-order:stroke;stroke:#fff;stroke-width:3px}
-/* transicao Brasil -> estado */
+/* transicao Brasil -> estado (zoom-blur) */
+#cam{transition:transform .55s cubic-bezier(.2,.8,.2,1),filter .55s ease}
 .estado{transition:filter .45s ease,opacity .45s ease}
 .estado-blur{filter:blur(2.5px);opacity:.28}
 .marker-blur{filter:blur(2px);opacity:.3;transition:filter .45s,opacity .45s}
@@ -363,7 +364,7 @@ function abrir(id){
 /* ---- Mapa tatico 3D: Brasil -> estado (estilo iDroid / MGSV) ---- */
 const GEO = JSON.parse(document.getElementById('geo').textContent || '{}');
 const ELEV = 28;
-let rot = 0, zoom = 1, ufAtiva = null, animarSubida = false;
+let rot = 0, zoom = 1, ufAtiva = null, animarSubida = false, zoomBlurAtivo = false;
 let boundsAtuais = GEO.bounds || [[-74,-34],[-34,5]];
 const CX = 650, CY = 460, MW = 700, MH = 700;
 function normNome(s){
@@ -479,7 +480,12 @@ function desenharMapa(rows){
       porCidade[k].slice(0,4).forEach((r,i)=>{s+=marcador(r,m.centro,i,ufAtiva);});
     });
   }
-  svg.innerHTML='<g id="cam" transform="translate('+CX+' '+CY+') scale('+zoom+') translate('+(-CX)+' '+(-CY)+')">'+s+'</g>';
+  const eSel=ufAtiva?estadoPorSigla(ufAtiva):null;
+  const org=eSel?project(eSel.centro[0],eSel.centro[1],0)
+                :project((b[0][0]+b[1][0])/2,(b[0][1]+b[1][1])/2,0);
+  const escala=zoomBlurAtivo?zoom*1.8:zoom;
+  const blr=zoomBlurAtivo?5:0;
+  svg.innerHTML='<g id="cam" style="transform-box:view-box;transform-origin:'+org[0].toFixed(1)+'px '+org[1].toFixed(1)+'px;transform:scale('+escala+');filter:blur('+blr+'px)">'+s+'</g>';
 }
 
 function animarSelecaoEstado(sigla){
@@ -506,13 +512,34 @@ function animarSelecaoEstado(sigla){
   for(let i=0;i<marks.length;i++){
     if(marks[i].getAttribute('data-uf')!==sigla) marks[i].classList.add('marker-blur');
   }
-  setTimeout(()=>finalizarEntrada(sigla),560);
+  const eSel=estadoPorSigla(sigla);
+  if(eSel){
+    const cam=svg.querySelector('#cam');
+    if(cam){
+      const o=project(eSel.centro[0],eSel.centro[1],0);
+      cam.style.transition='transform .5s cubic-bezier(.2,.8,.2,1), filter .5s ease';
+      cam.style.transformBox='view-box';
+      cam.style.transformOrigin=o[0].toFixed(1)+'px '+o[1].toFixed(1)+'px';
+      void cam.getBoundingClientRect();
+      cam.style.transform='scale(1.8)';
+      cam.style.filter='blur(5px)';
+    }
+  }
+  setTimeout(()=>finalizarEntrada(sigla),520);
+}
+function assentarMapa(){
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const cam=document.getElementById('cam');
+    if(cam){ cam.style.transform='scale(1)'; cam.style.filter='blur(0px)'; }
+    zoomBlurAtivo=false;
+  }));
 }
 function finalizarEntrada(sigla){
-  ufAtiva=sigla; rot=0; zoom=1; animarSubida=true;
+  ufAtiva=sigla; rot=0; zoom=1; animarSubida=true; zoomBlurAtivo=true;
   const sl=document.getElementById('rot'); if(sl) sl.value=0;
   const b=document.getElementById('voltar'); if(b) b.style.display='inline-block';
   renderMapa();
+  assentarMapa();
   setTimeout(()=>{animarSubida=false;},1500);
 }
 function entrarEstado(sigla){
@@ -520,10 +547,11 @@ function entrarEstado(sigla){
   animarSelecaoEstado(sigla);
 }
 function voltarBrasil(){
-  ufAtiva=null; rot=0; zoom=1; animarSubida=false;
+  ufAtiva=null; rot=0; zoom=1; animarSubida=false; zoomBlurAtivo=true;
   const sl=document.getElementById('rot'); if(sl) sl.value=0;
   const b=document.getElementById('voltar'); if(b) b.style.display='none';
   renderMapa();
+  assentarMapa();
   const svg=document.getElementById('mapa');
   if(svg){
     const gs=svg.querySelectorAll('.estado');
