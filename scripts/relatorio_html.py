@@ -230,6 +230,22 @@ border:1px solid var(--line);overflow:hidden;cursor:grab;height:min(84vh,900px);
 .estado.inativo{opacity:.28}
 .rotulo-estado{font:19px var(--mono);font-weight:700;fill:#0a4f85;pointer-events:none;
 paint-order:stroke;stroke:#fff;stroke-width:3px}
+/* transicao Brasil -> estado */
+.estado{transition:filter .45s ease,opacity .45s ease}
+.estado-blur{filter:blur(2.5px);opacity:.28}
+.marker-blur{filter:blur(2px);opacity:.3;transition:filter .45s,opacity .45s}
+.estado-topo{fill:rgba(0,184,230,.32);stroke:#00b8e6;stroke-width:2;
+filter:drop-shadow(0 0 9px rgba(0,184,230,.7))}
+.estado-rising{animation:subir 520ms cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes subir{from{transform:translateY(0)}to{transform:translateY(-28px)}}
+.estado-selecionado polygon:first-child{animation:baseFade 520ms ease-out forwards}
+@keyframes baseFade{to{opacity:.35}}
+.mun-rise{animation:subirMun 520ms cubic-bezier(.2,.8,.2,1) both}
+@keyframes subirMun{from{transform:translateY(0);opacity:0}to{transform:translateY(-28px);opacity:1}}
+.faces{animation:facesIn 520ms ease-out both}
+@keyframes facesIn{from{opacity:0}to{opacity:1}}
+.estado-entrando{animation:entrarFade .5s ease-out both}
+@keyframes entrarFade{from{opacity:0}to{opacity:1}}
 .legenda{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:#f8fcff;
 border:1px solid var(--line)}
 .legenda .chip{font:10px var(--mono);letter-spacing:.3px;padding:5px 8px;background:#fff;
@@ -347,7 +363,7 @@ function abrir(id){
 /* ---- Mapa tatico 3D: Brasil -> estado (estilo iDroid / MGSV) ---- */
 const GEO = JSON.parse(document.getElementById('geo').textContent || '{}');
 const ELEV = 28;
-let rot = 0, zoom = 1, ufAtiva = null;
+let rot = 0, zoom = 1, ufAtiva = null, animarSubida = false;
 let boundsAtuais = GEO.bounds || [[-74,-34],[-34,5]];
 const CX = 650, CY = 460, MW = 700, MH = 700;
 function normNome(s){
@@ -384,11 +400,11 @@ function municipioDaAmostra(r,sigla){
   const k=normNome(r.municipio);
   return (((GEO.municipios||{})[sigla]||[]).find(m=>m.norm===k)) || null;
 }
-function marcador(r,centro,indice){
+function marcador(r,centro,indice,uf){
   const p=project(centro[0],centro[1],ELEV);
   const bx=p[0], by=p[1], ty=by-42-indice*38;
   const cor=r.tag==='VERMELHO'?'#e8343c':r.tag==='AMARELO'?'#f08a24':'#00a86b';
-  return `<g class="marker" onclick="abrirInfo('${esc(r.id)}')">`+
+  return `<g class="marker" data-uf="${esc(uf||'')}" onclick="abrirInfo('${esc(r.id)}')">`+
     `<line x1="${bx}" y1="${by}" x2="${bx}" y2="${ty+8}"/>`+
     `<polygon points="${bx},${ty-8} ${bx+8},${ty} ${bx},${ty+8} ${bx-8},${ty}"/>`+
     `<text x="${bx+14}" y="${ty-2}">${esc(r.id)}</text>`+
@@ -415,7 +431,7 @@ function desenharMapa(rows){
     rows.forEach(r=>{const uf=ufDaAmostra(r); if(uf){(porUF[uf]=porUF[uf]||[]).push(r);}});
     GEO.estados.forEach(e=>{
       const pt=project(e.centro[0],e.centro[1],0);
-      s+=`<g class="estado${(porUF[e.sigla]||[]).length?' ativo':''}" onclick="entrarEstado('${e.sigla}')">`+
+      s+=`<g class="estado${(porUF[e.sigla]||[]).length?' ativo':''}" data-sigla="${e.sigla}" onclick="entrarEstado('${e.sigla}')">`+
          `<polygon points="${ptsStr(anel(e.ring,0))}"/>`+
          `<text class="rotulo-estado" x="${pt[0]}" y="${pt[1]}">${esc(e.sigla)}</text></g>`;
     });
@@ -430,7 +446,7 @@ function desenharMapa(rows){
       (porCidade[k]=porCidade[k]||{centro:centro,amostras:[]}).amostras.push(r);
     });
     Object.keys(porCidade).forEach(k=>{
-      porCidade[k].amostras.slice(0,4).forEach((r,i)=>{s+=marcador(r,porCidade[k].centro,i);});
+      porCidade[k].amostras.slice(0,4).forEach((r,i)=>{s+=marcador(r,porCidade[k].centro,i,ufDaAmostra(r));});
     });
   } else {
     const muns=(GEO.municipios||{})[ufAtiva]||[];
@@ -439,40 +455,80 @@ function desenharMapa(rows){
       const k=normNome(r.municipio);
       (porCidade[k]=porCidade[k]||[]).push(r);
     });
+    let idxAtivo=0;
     muns.forEach(m=>{
       const ativos=porCidade[m.norm]||[];
       const base=anel(m.ring,0);
-      const topo=ativos.length?anel(m.ring,ELEV):base;
+      const topoGeo=anel(m.ring,ELEV);
+      const atraso=idxAtivo*70;
       let lados='';
       if(ativos.length){
         for(let i=0;i<base.length-1;i++){
-          lados+=`<polygon class="mun-side" points="${ptsStr([base[i],base[i+1],topo[i+1],topo[i]])}"/>`;
+          lados+=`<polygon class="mun-side${animarSubida?' faces':''}" style="animation-delay:${atraso}ms" points="${ptsStr([base[i],base[i+1],topoGeo[i+1],topoGeo[i]])}"/>`;
         }
       }
+      const topo=ativos.length&&animarSubida?base:topoGeo;
       s+=`<g>${lados}<polygon class="mun${ativos.length?' ativo':''}" points="${ptsStr(base)}"/>`;
-      if(ativos.length) s+=`<polygon class="mun-top" points="${ptsStr(topo)}"/>`;
+      if(ativos.length) s+=`<polygon class="mun-top${animarSubida?' mun-rise':''}" style="animation-delay:${atraso}ms" points="${ptsStr(topo)}"/>`;
       s+='</g>';
+      if(ativos.length) idxAtivo++;
     });
     Object.keys(porCidade).forEach(k=>{
       const m=muns.find(x=>x.norm===k);
       if(!m) return;
-      porCidade[k].slice(0,4).forEach((r,i)=>{s+=marcador(r,m.centro,i);});
+      porCidade[k].slice(0,4).forEach((r,i)=>{s+=marcador(r,m.centro,i,ufAtiva);});
     });
   }
   svg.innerHTML='<g id="cam" transform="translate('+CX+' '+CY+') scale('+zoom+') translate('+(-CX)+' '+(-CY)+')">'+s+'</g>';
 }
 
-function entrarEstado(sigla){
-  ufAtiva=sigla; rot=0; zoom=1;
+function animarSelecaoEstado(sigla){
+  const svg=document.getElementById('mapa');
+  if(!svg){ finalizarEntrada(sigla); return; }
+  const grupos=svg.querySelectorAll('.estado');
+  for(let i=0;i<grupos.length;i++){
+    const g=grupos[i];
+    if(g.getAttribute('data-sigla')===sigla){
+      g.classList.add('estado-selecionado');
+      const poly=g.querySelector('polygon');
+      if(poly){
+        const topo=poly.cloneNode(true);
+        topo.setAttribute('class','estado-topo estado-rising');
+        g.appendChild(topo);
+      }
+      const rotulo=g.querySelector('.rotulo-estado');
+      if(rotulo) rotulo.setAttribute('class','rotulo-estado estado-rising');
+    } else {
+      g.classList.add('estado-blur');
+    }
+  }
+  const marks=svg.querySelectorAll('.marker');
+  for(let i=0;i<marks.length;i++){
+    if(marks[i].getAttribute('data-uf')!==sigla) marks[i].classList.add('marker-blur');
+  }
+  setTimeout(()=>finalizarEntrada(sigla),560);
+}
+function finalizarEntrada(sigla){
+  ufAtiva=sigla; rot=0; zoom=1; animarSubida=true;
   const sl=document.getElementById('rot'); if(sl) sl.value=0;
   const b=document.getElementById('voltar'); if(b) b.style.display='inline-block';
   renderMapa();
+  setTimeout(()=>{animarSubida=false;},1500);
+}
+function entrarEstado(sigla){
+  if(ufAtiva) return;
+  animarSelecaoEstado(sigla);
 }
 function voltarBrasil(){
-  ufAtiva=null; rot=0; zoom=1;
+  ufAtiva=null; rot=0; zoom=1; animarSubida=false;
   const sl=document.getElementById('rot'); if(sl) sl.value=0;
   const b=document.getElementById('voltar'); if(b) b.style.display='none';
   renderMapa();
+  const svg=document.getElementById('mapa');
+  if(svg){
+    const gs=svg.querySelectorAll('.estado');
+    for(let i=0;i<gs.length;i++) gs[i].classList.add('estado-entrando');
+  }
 }
 function statusMapa(){
   const el=document.getElementById('mapa-status');
