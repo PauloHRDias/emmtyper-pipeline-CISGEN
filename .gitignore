@@ -20,6 +20,12 @@ resultados_consolidados/*
 !resultados_consolidados/.gitkeep
 
 # ============================================
+# Analises complementares geradas (epitopos)
+# ============================================
+analises/
+*.faa
+
+# ============================================
 # Dados brutos e assemblies
 # ============================================
 *.fna

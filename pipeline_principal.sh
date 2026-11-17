@@ -23,6 +23,7 @@ USAR_PCR=0
 USAR_QC=1
 GERAR_LAUDOS=1
 GERAR_RELATORIO=1
+GERAR_HTML=1
 METADADOS=""
 AMOSTRAS=()
 
@@ -34,6 +35,7 @@ Uso: ./pipeline_principal.sh [opcoes]
   --sem-laudos          pula a geracao de laudos (mais rapido)
   --sem-qc              pula o QC basico de montagem
   --sem-relatorio       pula o relatorio resumido do lote
+  --sem-html            pula o dashboard HTML autocontido
   --pcr                 inclui tipagem por PCR in silico
   --metadados CAMINHO   junta metadados clinico-epidemiologicos (CSV/TSV)
   --amostra CAMINHO     processa apenas uma amostra
@@ -47,6 +49,7 @@ while [ "$#" -gt 0 ]; do
     --sem-laudos)   GERAR_LAUDOS=0; shift ;;
     --sem-qc)       USAR_QC=0; shift ;;
     --sem-relatorio) GERAR_RELATORIO=0; shift ;;
+    --sem-html)     GERAR_HTML=0; shift ;;
     --metadados)
       if [ "$#" -lt 2 ]; then
         echo "ERRO: --metadados requer um caminho." >&2
@@ -95,7 +98,7 @@ fi
 
 echo "=============================================================="
 echo " Pipeline de vigilancia genomica - $(date '+%Y-%m-%d %H:%M:%S')"
-echo " Amostras: ${#AMOSTRAS[@]} | PCR: $USAR_PCR | QC: $USAR_QC | Laudos: $GERAR_LAUDOS"
+echo " Amostras: ${#AMOSTRAS[@]} | PCR: $USAR_PCR | QC: $USAR_QC | Laudos: $GERAR_LAUDOS | HTML: $GERAR_HTML"
 echo "=============================================================="
 
 QC_TSV="$RAIZ/resultados_consolidados/qc_montagem.tsv"
@@ -281,6 +284,27 @@ if [ "$GERAR_RELATORIO" -eq 1 ]; then
   fi
 fi
 
+if [ "$GERAR_HTML" -eq 1 ]; then
+  echo
+  echo "=============================================================="
+  echo " Gerando dashboard HTML (visualizacao offline)"
+  echo "=============================================================="
+  # Aproveita laudos de execucoes anteriores mesmo quando --sem-laudos e usado.
+  ARQ_LAUDOS_HTML="$RAIZ/resultados_consolidados/laudos.txt"
+  [ -f "$ARQ_LAUDOS_HTML" ] || ARQ_LAUDOS_HTML=""
+  "$CONDA_PREFIX/bin/python" "$RAIZ/scripts/relatorio_html.py" \
+    --tabela "$TABELA_FINAL" \
+    --laudos "$ARQ_LAUDOS_HTML" \
+    --vfdb "$RAIZ/banco_dados/VFDB_S.pyogenes.fas" \
+    --saida "$RAIZ/resultados_consolidados/dashboard.html" \
+    --min-pident "$VFDB_MIN_PIDENT" \
+    --min-qcov "$VFDB_MIN_QCOV"
+  STATUS_HTML=$?
+  if [ "$STATUS_HTML" -ne 0 ]; then
+    echo "AVISO: o dashboard HTML terminou com codigo $STATUS_HTML." >&2
+  fi
+fi
+
 echo
 echo "=============================================================="
 echo " Resumo: $PROCESSADAS processada(s), $FALHAS falha(s)"
@@ -291,6 +315,7 @@ fi
 echo " Tabela: $TABELA_FINAL"
 [ "$GERAR_LAUDOS" -eq 1 ] && echo " Laudos: $RAIZ/resultados_consolidados/laudos.txt"
 [ "$GERAR_RELATORIO" -eq 1 ] && echo " Relatorio: $RAIZ/resultados_consolidados/relatorio_lote.md"
+[ "$GERAR_HTML" -eq 1 ] && echo " Dashboard: $RAIZ/resultados_consolidados/dashboard.html"
 echo "=============================================================="
 
 [ "$FALHAS" -eq 0 ] || exit 1

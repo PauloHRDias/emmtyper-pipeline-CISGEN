@@ -20,7 +20,8 @@ resultados_consolidados/epibuilder_metadata.tsv
 resultados_consolidados/epibuilder_completo.tsv
    │
    ├── laudos via Ollama (llama3:8b) ──► laudos.txt
-   └── relatório do lote ──────────────► relatorio_lote.md
+   ├── relatório do lote ──────────────► relatorio_lote.md
+   └── dashboard HTML ─────────────────► dashboard.html
 ```
 
 A montagem e a anotação (Dorado → Flye → Medaka → QUAST/NanoPlot → Prokka) ocorrem
@@ -51,9 +52,10 @@ cd ~/teste_emmtyper
 # Com metadados clínico-epidemiológicos (CSV ou TSV)
 ./pipeline_principal.sh --metadados docs/metadados_exemplo.tsv
 
-# Pular QC de montagem ou relatório do lote
+# Pular QC de montagem, relatório do lote ou dashboard HTML
 ./pipeline_principal.sh --sem-qc
 ./pipeline_principal.sh --sem-relatorio
+./pipeline_principal.sh --sem-html
 
 # Incluir PCR in silico
 ./pipeline_principal.sh --pcr
@@ -151,6 +153,7 @@ em biologia, com referências em ABNT, relevância para o TCC e ordem de leitura
 | `scripts/consolidar_lote.py` | Monta a tabela final com emm e virulência **reais**. |
 | `scripts/juntar_metadados.py` | Junta QC e metadados clínico-epidemiológicos por `ID_Amostra`. |
 | `scripts/relatorio_lote.py` | Gera o relatório Markdown resumido do lote. |
+| `scripts/relatorio_html.py` | Gera o dashboard HTML autocontido (visualização offline). |
 | `scripts/prepara_epibuilder.py` | Parsers de emm/VFDB e geração individual da tabela. |
 | `scripts/vigilancia_bot.py` | Gera os laudos via Ollama para as amostras de *S. pyogenes*. |
 | `scripts/rag_vigilancia.py` | Constrói o dicionário de genes do VFDB (diagnóstico). |
@@ -185,7 +188,36 @@ teste_emmtyper/
   (quando `--metadados` é usado).
 - `resultados_consolidados/laudos.txt` — laudos gerados pelo Ollama.
 - `resultados_consolidados/relatorio_lote.md` — relatório resumido do lote.
+- `resultados_consolidados/dashboard.html` — painel interativo para visualização (abrir no navegador).
 - `logs/<ID>_*.stderr.log` — erros e avisos por etapa.
+
+## Visualização (dashboard HTML)
+
+O arquivo `resultados_consolidados/dashboard.html` é gerado automaticamente e
+contém **CSS e JavaScript embutidos**: funciona offline, sem servidor nem
+dependências, e pode ser aberto no navegador ou anexado a um e-mail.
+
+O painel mostra:
+
+- cartões com total de amostras, tipos *emm*, alertas vermelhos e QC aprovado;
+- gráficos de distribuição de *emm*, evolução mensal, municípios e categorias
+  funcionais do VFDB;
+- tabela filtrável (busca livre, *emm*, município e alerta) com exportação TSV;
+- ao clicar numa amostra, o laudo completo, as categorias e os genes detectados.
+
+Para atualizar apenas o painel sem reprocessar os genomas:
+
+```bash
+source config.sh
+"$CONDA_PREFIX/bin/python" scripts/relatorio_html.py
+```
+
+Escolha de design: o HTML é o formato de baixa fricção para o TCC e as primeiras
+demonstrações no SUS. Se houver necessidade de filtros mais elaborados ou de
+acesso por múltiplos usuários na rede do laboratório, a evolução natural é um
+aplicativo Streamlit lendo as mesmas tabelas — os dados já estão preparados para
+isso. A análise de epítopos com o EpiBuilder é separada (ver
+[`docs/epibuilder_epitopos.md`](docs/epibuilder_epitopos.md)).
 
 ## Metadados clínico-epidemiológicos
 
