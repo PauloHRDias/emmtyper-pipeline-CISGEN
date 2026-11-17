@@ -204,7 +204,10 @@ O painel mostra:
 - cartões com total de amostras, tipos *emm*, alertas vermelhos e QC aprovado;
 - **mapa tático 3D** (projeção isométrica, estilo iDroid) dos municípios de SC:
   polígonos com extrusão, marcadores com o ID da amostra e o alerta ao lado, e
-  uma caixa clicável com os dados completos da amostra;
+  uma caixa clicável com os dados completos da amostra. O mapa gira **360°**
+  (arraste com o mouse/toque ou use o slider), tem **zoom** (roda do mouse ou
+  botões +/−), botão **RESET** e uma **legenda clicável abaixo do mapa** com
+  todas as amostras (mesmo clique da caixa de detalhes);
 - gráficos de distribuição de *emm*, evolução mensal, municípios e categorias
   funcionais do VFDB;
 - tabela filtrável (busca livre, *emm*, município e alerta) com exportação TSV;

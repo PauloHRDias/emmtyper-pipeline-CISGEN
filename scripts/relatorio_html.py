@@ -208,24 +208,35 @@ padding:1px 5px;margin:2px;font:10px var(--mono)}
 footer{font:10px/1.6 var(--mono);letter-spacing:.6px;color:var(--muted);text-transform:uppercase;
 margin:22px 0;padding-top:12px;border-top:1px solid var(--cyan)}
 /* mapa tatico 3D (estilo iDroid / MGSV) */
+.mapa-controles{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.mapa-controles button{min-width:64px}
+.mapa-controles input[type=range]{width:190px;accent-color:var(--cyan);padding:0;border:none;background:transparent}
+.mapa-status{font:9px var(--mono);letter-spacing:1.2px;color:var(--muted);margin-left:auto;text-transform:uppercase}
 .mapa-wrap{position:relative;display:grid;grid-template-columns:1fr 300px;gap:14px}
 @media(max-width:920px){.mapa-wrap{grid-template-columns:1fr}}
 .mapa-canvas{position:relative;background:linear-gradient(180deg,#f5fbff,#e4f2ff);
-border:1px solid var(--line);overflow:hidden}
+border:1px solid var(--line);overflow:hidden;cursor:grab}
+.mapa-canvas:active{cursor:grabbing}
+.legenda{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:#f8fcff;
+border:1px solid var(--line)}
+.legenda .chip{font:10px var(--mono);letter-spacing:.3px;padding:5px 8px;background:#fff;
+border:1px solid #cfe6f5;color:#0a4f85;cursor:pointer;white-space:nowrap}
+.legenda .chip:hover{background:#e9f7ff;border-color:var(--cyan);box-shadow:0 0 8px rgba(0,184,230,.25)}
+.legenda .chip b{color:#073d6b}
 .mapa-canvas::after{content:"";position:absolute;inset:0;pointer-events:none;
 background:repeating-linear-gradient(0deg,rgba(0,184,230,.035) 0 1px,transparent 1px 5px)}
 .mapa-canvas::before{content:"TOP VIEW // SC-3D // ESCALA TATICA";position:absolute;left:10px;top:8px;
 font:9px var(--mono);letter-spacing:1.6px;color:#5f89a6;z-index:2}
 #mapa{display:block;width:100%;height:auto}
-.mun{stroke:#7abfe6;stroke-width:.6;fill:rgba(10,127,212,.05)}
-.mun.ativo{fill:rgba(0,184,230,.18);stroke:#00b8e6;stroke-width:1.3}
+.mun{stroke:#7abfe6;stroke-width:1;fill:rgba(10,127,212,.05)}
+.mun.ativo{fill:rgba(0,184,230,.18);stroke:#00b8e6;stroke-width:1.8}
 .mun-side{fill:rgba(0,152,200,.22);stroke:none}
-.mun-top{fill:rgba(255,255,255,.78);stroke:#00a8d8;stroke-width:.9}
-.grid-linha{stroke:rgba(10,127,212,.14);stroke-width:.6}
+.mun-top{fill:rgba(255,255,255,.78);stroke:#00a8d8;stroke-width:1.4}
+.grid-linha{stroke:rgba(10,127,212,.14);stroke-width:.8}
 .marker{cursor:pointer}
-.marker line{stroke:#00b8e6;stroke-width:1}
+.marker line{stroke:#00b8e6;stroke-width:1.8}
 .marker polygon{fill:#00b8e6;filter:drop-shadow(0 0 5px #00d9ff)}
-.marker text{font:10px var(--mono);fill:#073d6b}
+.marker text{font:16px var(--mono);fill:#073d6b;paint-order:stroke;stroke:#fff;stroke-width:3px}
 .marker:hover polygon{fill:#e8343c;filter:drop-shadow(0 0 7px #e8343c)}
 .info-box{background:#fff;border:1px solid var(--cyan);padding:14px 14px 14px 16px;
 font:11px/1.6 var(--mono);position:relative;box-shadow:inset 3px 0 0 var(--cyan)}
@@ -321,7 +332,9 @@ function abrir(id){
 
 /* ---- Mapa tatico 3D (projecao isometrica dos municipios de SC) ---- */
 const GEO = JSON.parse(document.getElementById('geo').textContent || '{}');
-const ELEV = 24;
+const ELEV = 36;
+let rot = 0, zoom = 1;
+const CX = 650, CY = 460, MW = 620, MH = 560;
 function normNome(s){
   return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/_/g,' ').trim();
 }
@@ -329,8 +342,11 @@ function project(lon,lat,z){
   const b = GEO.bounds || [[-53.9,-29.4],[-48.3,-25.9]];
   const u=(lon-b[0][0])/(b[1][0]-b[0][0]);
   const v=(b[1][1]-lat)/(b[1][1]-b[0][1]);
-  const x=u*470, y=v*430;
-  return [470+(x-y)*0.82, 185+(x+y)*0.44-(z||0)];
+  const dx=(u-0.5)*MW, dy=(v-0.5)*MH;
+  const a=rot*Math.PI/180;
+  const rx=dx*Math.cos(a)-dy*Math.sin(a);
+  const ry=dx*Math.sin(a)+dy*Math.cos(a);
+  return [CX+(rx-ry)*0.78, CY+(rx+ry)*0.38-(z||0)];
 }
 function anel(ring,z){return ring.map(p=>project(p[0],p[1],z));}
 function ptsStr(arr){return arr.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');}
@@ -371,18 +387,59 @@ function desenharMapa(rows){
     const bx=project(m.centro[0],m.centro[1],ELEV)[0];
     const by=project(m.centro[0],m.centro[1],ELEV)[1];
     por[k].slice(0,4).forEach((r,i)=>{
-      const ty=by-34-i*28;
+      const ty=by-42-i*38;
       const cor=r.tag==='VERMELHO'?'#e8343c':r.tag==='AMARELO'?'#f08a24':'#00a86b';
       marc+=`<g class="marker" onclick="abrirInfo('${esc(r.id)}')">`+
-        `<line x1="${bx}" y1="${by}" x2="${bx}" y2="${ty+6}"/>`+
-        `<polygon points="${bx},${ty-6} ${bx+6},${ty} ${bx},${ty+6} ${bx-6},${ty}"/>`+
-        `<text x="${bx+10}" y="${ty-2}">${esc(r.id)}</text>`+
-        `<text class="tag-label" style="fill:${cor};font-weight:700" x="${bx+10}" y="${ty+11}">[${esc(r.tag)}]</text>`+
+        `<line x1="${bx}" y1="${by}" x2="${bx}" y2="${ty+8}"/>`+
+        `<polygon points="${bx},${ty-8} ${bx+8},${ty} ${bx},${ty+8} ${bx-8},${ty}"/>`+
+        `<text x="${bx+14}" y="${ty-2}">${esc(r.id)}</text>`+
+        `<text class="tag-label" style="fill:${cor};font-weight:700" x="${bx+14}" y="${ty+17}">[${esc(r.tag)}]</text>`+
         `</g>`;
     });
   });
   s+=marc;
-  svg.innerHTML=s;
+  svg.innerHTML='<g id="cam" transform="translate('+CX+' '+CY+') scale('+zoom+') translate('+(-CX)+' '+(-CY)+')">'+s+'</g>';
+}
+
+function statusMapa(){
+  const el=document.getElementById('mapa-status');
+  if(el) el.textContent='ROT '+Math.round(rot)+'° · ZOOM '+zoom.toFixed(2)+'x · ARRASTE PARA GIRAR';
+}
+function renderMapa(){
+  desenharMapa(filtrar());
+  statusMapa();
+}
+let pendenteMapa=false;
+function agendarMapa(){
+  if(pendenteMapa) return;
+  pendenteMapa=true;
+  requestAnimationFrame(()=>{pendenteMapa=false;renderMapa();});
+}
+function girar(graus){
+  rot=(rot+graus+360)%360;
+  const sl=document.getElementById('rot'); if(sl) sl.value=rot;
+  agendarMapa();
+}
+function zoomMapa(fator){
+  zoom=Math.max(0.5,Math.min(6,zoom*fator));
+  agendarMapa();
+}
+function resetMapa(){
+  rot=0; zoom=1;
+  const sl=document.getElementById('rot'); if(sl) sl.value=0;
+  renderMapa();
+}
+function desenharLegenda(rows){
+  const el=document.getElementById('legenda');
+  if(!el) return;
+  const itens=rows.filter(r=>r.municipio && r.municipio!=='NA');
+  el.innerHTML=itens.length
+    ? itens.map(r=>{
+        const cor=r.tag==='VERMELHO'?'#e8343c':r.tag==='AMARELO'?'#f08a24':'#00a86b';
+        return '<button class="chip" onclick="abrirInfo(\''+esc(r.id)+'\')">'+
+          '<b style="color:'+cor+'">●</b> '+esc(r.id)+' · '+esc(r.emm)+' · '+esc(r.municipio)+'</button>';
+      }).join('')
+    : '<span style="font:10px var(--mono);color:#6e8ba3">Nenhuma amostra com município informado.</span>';
 }
 
 function abrirInfo(id){
@@ -415,6 +472,8 @@ function render(){
   rows.forEach(r=>Object.entries(r.categorias).forEach(([k,v])=>cat[k]=(cat[k]||0)+v));
   barras('c-categorias',Object.entries(cat).sort((a,b)=>b[1]-a[1]),'#0090c8');
   desenharMapa(rows);
+  statusMapa();
+  desenharLegenda(rows);
   tabela(rows);
 }
 
@@ -438,6 +497,34 @@ window.addEventListener('DOMContentLoaded',()=>{
     render();
   });
   document.getElementById('exportar').addEventListener('click',exportar);
+  const sl=document.getElementById('rot');
+  if(sl) sl.addEventListener('input',()=>{rot=Number(sl.value);agendarMapa();});
+  const canvas=document.querySelector('.mapa-canvas');
+  if(canvas){
+    let arrastando=false, ultimoX=0;
+    canvas.addEventListener('mousedown',e=>{arrastando=true;ultimoX=e.clientX;});
+    window.addEventListener('mousemove',e=>{
+      if(!arrastando) return;
+      rot=(rot+(e.clientX-ultimoX)*0.5+360)%360;
+      ultimoX=e.clientX;
+      if(sl) sl.value=rot;
+      agendarMapa();
+    });
+    window.addEventListener('mouseup',()=>{arrastando=false;});
+    canvas.addEventListener('wheel',e=>{
+      e.preventDefault();
+      zoomMapa(e.deltaY<0?1.12:1/1.12);
+    },{passive:false});
+    let ultimoTouchX=0;
+    canvas.addEventListener('touchstart',e=>{ultimoTouchX=e.touches[0].clientX;},{passive:true});
+    canvas.addEventListener('touchmove',e=>{
+      rot=(rot+(e.touches[0].clientX-ultimoTouchX)*0.5+360)%360;
+      ultimoTouchX=e.touches[0].clientX;
+      if(sl) sl.value=rot;
+      agendarMapa();
+      e.preventDefault();
+    },{passive:false});
+  }
   render();
 });
 """
@@ -484,12 +571,22 @@ def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov, 
  <div class="panel"><h2><span class="id">04</span> Categorias funcionais VFDB</h2><div id="c-categorias"></div></div>
 </div>
 <div class="panel"><h2><span class="id">06</span> Mapa tático 3D · amostras por município</h2>
+<div class="mapa-controles">
+ <button onclick="girar(-15)">↺ 15°</button>
+ <input type="range" id="rot" min="0" max="360" value="0" title="Rotação 0–360°">
+ <button onclick="girar(15)">↻ 15°</button>
+ <button onclick="zoomMapa(1.25)">+ ZOOM</button>
+ <button onclick="zoomMapa(0.8)">− ZOOM</button>
+ <button onclick="resetMapa()">RESET</button>
+ <span class="mapa-status" id="mapa-status">ROT 0° · ZOOM 1.0x · ARRASTE PARA GIRAR</span>
+</div>
 <div class="mapa-wrap">
- <div class="mapa-canvas"><svg id="mapa" viewBox="0 0 960 620" role="img" aria-label="Mapa de Santa Catarina com amostras"></svg></div>
+ <div class="mapa-canvas"><svg id="mapa" viewBox="0 0 1300 980" role="img" aria-label="Mapa 3D de Santa Catarina com amostras"></svg></div>
  <aside class="info-box hidden" id="info-box">
   <button class="fechar" onclick="fecharInfo()">✕ FECHAR</button>
   <h3 id="ib-titulo">AMOSTRA</h3><div id="ib-conteudo"></div>
  </aside>
+ <div class="legenda" id="legenda"></div>
 </div></div>
 <div class="panel"><h2><span class="id">05</span> Amostras · clique para abrir o laudo</h2>
 <table><thead><tr><th>ID</th><th>emm</th><th>Município</th><th>Data</th><th>Sítio</th>
