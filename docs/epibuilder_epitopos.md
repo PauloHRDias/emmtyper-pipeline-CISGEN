@@ -67,6 +67,26 @@ proteína e o Nextflow pode verificar plugins na rede. Validação feita em
 A interface web (`docker compose up -d`, acesso em `http://localhost`) é uma
 alternativa para acompanhar os jobs pela interface.
 
+## Resultados obtidos em 16/11/2026
+
+Execução completa das 333 proteínas: **5/5 processos Nextflow concluídos em
+14m41s** (`logs/epibuilder.log`, EXIT=0). As saídas foram copiadas para
+`analises/epibuilder/resultado_vfdb/` (não versionado).
+
+| Métrica | Valor |
+|---|---|
+| Proteínas analisadas | 333 |
+| Proteínas com pelo menos um epítopo | 287 |
+| Epítopos lineares preditos | 1099 |
+| Comprimento médio do epítopo | 16,4 resíduos |
+| Localização mais frequente | parede celular (80), extracelular (65) |
+
+Proteínas com maior número de epítopos: `VFG005275` (adhesin, 16),
+`endoS` (13–14 em seis variantes) e `sfbII/sof` (13). Os epítopos com maior
+score BepiPred-3 pertencem a `sfbII/sof`, `endoS` e `hylA` (scores 0,24–0,25).
+O cruzamento com `proteins_metadata.tsv` permite associar cada epítopo ao gene
+de virulência (VFG) correspondente.
+
 ## 3. Interpretar os resultados no contexto do TCC
 
 - Cruze os epítopos preditos com `proteins_metadata.tsv` para saber a que gene
