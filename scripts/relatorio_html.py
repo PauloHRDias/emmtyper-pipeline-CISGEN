@@ -121,6 +121,7 @@ def construir_dados(linhas, laudos, vfdb):
             "genes": genes[:40],
             "categorias": dict(categorias),
             "municipio": valor(row, "Municipio", "Município"),
+            "uf": valor(row, "UF", "UF_Amostra"),
             "data": data_coleta or "NA",
             "mes": mes,
             "sitio": valor(row, "Sitio_Anatomico", "Sítio_Anatomico"),
@@ -213,15 +214,22 @@ margin:22px 0;padding-top:12px;border-top:1px solid var(--cyan)}
 box-shadow:0 0 0 100vmax rgba(4,28,48,.55)}
 .mapa-panel.expandido .mapa-canvas{height:calc(100vh - 230px)}
 .mapa-panel.expandido #mapa{height:100%}
-.mapa-controles{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.mapa-controles{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin-bottom:10px}
 .mapa-controles button{min-width:64px}
 .mapa-controles input[type=range]{width:190px;accent-color:var(--cyan);padding:0;border:none;background:transparent}
 .mapa-status{font:9px var(--mono);letter-spacing:1.2px;color:var(--muted);margin-left:auto;text-transform:uppercase}
 .mapa-wrap{position:relative;display:block}
 .mapa-palco{position:relative}
 .mapa-canvas{position:relative;background:linear-gradient(180deg,#f5fbff,#e4f2ff);
-border:1px solid var(--line);overflow:hidden;cursor:grab}
+border:1px solid var(--line);overflow:hidden;cursor:grab;height:min(84vh,900px);min-height:620px}
 .mapa-canvas:active{cursor:grabbing}
+#mapa{height:100%}
+.estado{stroke:#79bfe8;stroke-width:1;fill:rgba(10,127,212,.06);cursor:pointer;transition:fill .18s,stroke .18s}
+.estado:hover{fill:rgba(0,184,230,.22);stroke:#00b8e6}
+.estado.ativo{fill:rgba(0,184,230,.30);stroke:#00b8e6;stroke-width:2;filter:drop-shadow(0 0 7px rgba(0,184,230,.55))}
+.estado.inativo{opacity:.28}
+.rotulo-estado{font:19px var(--mono);font-weight:700;fill:#0a4f85;pointer-events:none;
+paint-order:stroke;stroke:#fff;stroke-width:3px}
 .legenda{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:#f8fcff;
 border:1px solid var(--line)}
 .legenda .chip{font:10px var(--mono);letter-spacing:.3px;padding:5px 8px;background:#fff;
@@ -336,16 +344,17 @@ function abrir(id){
   if(el) el.style.display = el.style.display==='none' ? 'table-row' : 'none';
 }
 
-/* ---- Mapa tatico 3D (projecao isometrica dos municipios de SC) ---- */
+/* ---- Mapa tatico 3D: Brasil -> estado (estilo iDroid / MGSV) ---- */
 const GEO = JSON.parse(document.getElementById('geo').textContent || '{}');
-const ELEV = 36;
-let rot = 0, zoom = 1;
-const CX = 650, CY = 460, MW = 620, MH = 560;
+const ELEV = 28;
+let rot = 0, zoom = 1, ufAtiva = null;
+let boundsAtuais = GEO.bounds || [[-74,-34],[-34,5]];
+const CX = 650, CY = 460, MW = 700, MH = 700;
 function normNome(s){
   return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/_/g,' ').trim();
 }
 function project(lon,lat,z){
-  const b = GEO.bounds || [[-53.9,-29.4],[-48.3,-25.9]];
+  const b=boundsAtuais;
   const u=(lon-b[0][0])/(b[1][0]-b[0][0]);
   const v=(b[1][1]-lat)/(b[1][1]-b[0][1]);
   const dx=(u-0.5)*MW, dy=(v-0.5)*MH;
@@ -356,13 +365,42 @@ function project(lon,lat,z){
 }
 function anel(ring,z){return ring.map(p=>project(p[0],p[1],z));}
 function ptsStr(arr){return arr.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');}
+function estadoPorSigla(sigla){return (GEO.estados||[]).find(e=>e.sigla===sigla);}
+function boundsDoEstado(sigla){
+  const e=estadoPorSigla(sigla);
+  if(!e) return GEO.bounds;
+  const xs=e.ring.map(p=>p[0]), ys=e.ring.map(p=>p[1]);
+  return [[Math.min.apply(null,xs),Math.min.apply(null,ys)],[Math.max.apply(null,xs),Math.max.apply(null,ys)]];
+}
+function ufDaAmostra(r){
+  if(r.uf && r.uf!=='NA') return String(r.uf).toUpperCase().slice(0,2);
+  const k=normNome(r.municipio);
+  for(const sigla in (GEO.municipios||{})){
+    if(((GEO.municipios||{})[sigla]||[]).some(m=>m.norm===k)) return sigla;
+  }
+  return '';
+}
+function municipioDaAmostra(r,sigla){
+  const k=normNome(r.municipio);
+  return (((GEO.municipios||{})[sigla]||[]).find(m=>m.norm===k)) || null;
+}
+function marcador(r,centro,indice){
+  const p=project(centro[0],centro[1],ELEV);
+  const bx=p[0], by=p[1], ty=by-42-indice*38;
+  const cor=r.tag==='VERMELHO'?'#e8343c':r.tag==='AMARELO'?'#f08a24':'#00a86b';
+  return `<g class="marker" onclick="abrirInfo('${esc(r.id)}')">`+
+    `<line x1="${bx}" y1="${by}" x2="${bx}" y2="${ty+8}"/>`+
+    `<polygon points="${bx},${ty-8} ${bx+8},${ty} ${bx},${ty+8} ${bx-8},${ty}"/>`+
+    `<text x="${bx+14}" y="${ty-2}">${esc(r.id)}</text>`+
+    `<text class="tag-label" style="fill:${cor};font-weight:700" x="${bx+14}" y="${ty+17}">[${esc(r.tag)}]</text>`+
+    `</g>`;
+}
 
 function desenharMapa(rows){
   const svg=document.getElementById('mapa');
-  if(!svg || !GEO.municipios) return;
-  const por={};
-  rows.forEach(r=>{const k=normNome(r.municipio);if(k&&k!=='na'){(por[k]=por[k]||[]).push(r);}});
-  const b=GEO.bounds||[[-53.9,-29.4],[-48.3,-25.9]];
+  if(!svg || !GEO.estados) return;
+  boundsAtuais = ufAtiva ? boundsDoEstado(ufAtiva) : GEO.bounds;
+  const b=boundsAtuais;
   let s='';
   for(let i=0;i<=10;i++){
     const lon=b[0][0]+i/10*(b[1][0]-b[0][0]);
@@ -372,44 +410,75 @@ function desenharMapa(rows){
     s+=`<line class="grid-linha" x1="${a[0]}" y1="${a[1]}" x2="${c[0]}" y2="${c[1]}"/>`;
     s+=`<line class="grid-linha" x1="${d[0]}" y1="${d[1]}" x2="${e[0]}" y2="${e[1]}"/>`;
   }
-  GEO.municipios.forEach(m=>{
-    const ativos=por[m.norm]||[];
-    const base=anel(m.ring,0);
-    const topo=ativos.length?anel(m.ring,ELEV):base;
-    let lados='';
-    if(ativos.length){
-      for(let i=0;i<base.length-1;i++){
-        lados+=`<polygon class="mun-side" points="${ptsStr([base[i],base[i+1],topo[i+1],topo[i]])}"/>`;
-      }
-    }
-    s+=`<g>${lados}<polygon class="mun${ativos.length?' ativo':''}" points="${ptsStr(base)}"/>`;
-    if(ativos.length) s+=`<polygon class="mun-top" points="${ptsStr(topo)}"/>`;
-    s+='</g>';
-  });
-  let marc='';
-  Object.keys(por).forEach(k=>{
-    const m=GEO.municipios.find(x=>x.norm===k);
-    if(!m) return;
-    const bx=project(m.centro[0],m.centro[1],ELEV)[0];
-    const by=project(m.centro[0],m.centro[1],ELEV)[1];
-    por[k].slice(0,4).forEach((r,i)=>{
-      const ty=by-42-i*38;
-      const cor=r.tag==='VERMELHO'?'#e8343c':r.tag==='AMARELO'?'#f08a24':'#00a86b';
-      marc+=`<g class="marker" onclick="abrirInfo('${esc(r.id)}')">`+
-        `<line x1="${bx}" y1="${by}" x2="${bx}" y2="${ty+8}"/>`+
-        `<polygon points="${bx},${ty-8} ${bx+8},${ty} ${bx},${ty+8} ${bx-8},${ty}"/>`+
-        `<text x="${bx+14}" y="${ty-2}">${esc(r.id)}</text>`+
-        `<text class="tag-label" style="fill:${cor};font-weight:700" x="${bx+14}" y="${ty+17}">[${esc(r.tag)}]</text>`+
-        `</g>`;
+  if(!ufAtiva){
+    const porUF={};
+    rows.forEach(r=>{const uf=ufDaAmostra(r); if(uf){(porUF[uf]=porUF[uf]||[]).push(r);}});
+    GEO.estados.forEach(e=>{
+      const pt=project(e.centro[0],e.centro[1],0);
+      s+=`<g class="estado${(porUF[e.sigla]||[]).length?' ativo':''}" onclick="entrarEstado('${e.sigla}')">`+
+         `<polygon points="${ptsStr(anel(e.ring,0))}"/>`+
+         `<text class="rotulo-estado" x="${pt[0]}" y="${pt[1]}">${esc(e.sigla)}</text></g>`;
     });
-  });
-  s+=marc;
+    const porCidade={};
+    rows.forEach(r=>{
+      const uf=ufDaAmostra(r);
+      const m=municipioDaAmostra(r,uf);
+      const e=estadoPorSigla(uf);
+      const centro=m?m.centro:(e?e.centro:null);
+      if(!centro) return;
+      const k=uf+'|'+normNome(r.municipio);
+      (porCidade[k]=porCidade[k]||{centro:centro,amostras:[]}).amostras.push(r);
+    });
+    Object.keys(porCidade).forEach(k=>{
+      porCidade[k].amostras.slice(0,4).forEach((r,i)=>{s+=marcador(r,porCidade[k].centro,i);});
+    });
+  } else {
+    const muns=(GEO.municipios||{})[ufAtiva]||[];
+    const porCidade={};
+    rows.filter(r=>ufDaAmostra(r)===ufAtiva).forEach(r=>{
+      const k=normNome(r.municipio);
+      (porCidade[k]=porCidade[k]||[]).push(r);
+    });
+    muns.forEach(m=>{
+      const ativos=porCidade[m.norm]||[];
+      const base=anel(m.ring,0);
+      const topo=ativos.length?anel(m.ring,ELEV):base;
+      let lados='';
+      if(ativos.length){
+        for(let i=0;i<base.length-1;i++){
+          lados+=`<polygon class="mun-side" points="${ptsStr([base[i],base[i+1],topo[i+1],topo[i]])}"/>`;
+        }
+      }
+      s+=`<g>${lados}<polygon class="mun${ativos.length?' ativo':''}" points="${ptsStr(base)}"/>`;
+      if(ativos.length) s+=`<polygon class="mun-top" points="${ptsStr(topo)}"/>`;
+      s+='</g>';
+    });
+    Object.keys(porCidade).forEach(k=>{
+      const m=muns.find(x=>x.norm===k);
+      if(!m) return;
+      porCidade[k].slice(0,4).forEach((r,i)=>{s+=marcador(r,m.centro,i);});
+    });
+  }
   svg.innerHTML='<g id="cam" transform="translate('+CX+' '+CY+') scale('+zoom+') translate('+(-CX)+' '+(-CY)+')">'+s+'</g>';
 }
 
+function entrarEstado(sigla){
+  ufAtiva=sigla; rot=0; zoom=1;
+  const sl=document.getElementById('rot'); if(sl) sl.value=0;
+  const b=document.getElementById('voltar'); if(b) b.style.display='inline-block';
+  renderMapa();
+}
+function voltarBrasil(){
+  ufAtiva=null; rot=0; zoom=1;
+  const sl=document.getElementById('rot'); if(sl) sl.value=0;
+  const b=document.getElementById('voltar'); if(b) b.style.display='none';
+  renderMapa();
+}
 function statusMapa(){
   const el=document.getElementById('mapa-status');
-  if(el) el.textContent='ROT '+Math.round(rot)+'° · ZOOM '+zoom.toFixed(2)+'x · ARRASTE PARA GIRAR';
+  if(el) el.textContent=(ufAtiva?('VISÃO '+ufAtiva):'VISÃO BRASIL')+
+    ' · ROT '+Math.round(rot)+'° · ZOOM '+zoom.toFixed(2)+'x · '+
+    (ufAtiva?'CLIQUE NA LEGENDA':'CLIQUE NUM ESTADO');
 }
 function renderMapa(){
   desenharMapa(filtrar());
@@ -592,7 +661,8 @@ def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov, 
  <button onclick="zoomMapa(1.25)">+ ZOOM</button>
  <button onclick="zoomMapa(0.8)">− ZOOM</button>
  <button onclick="resetMapa()">RESET</button>
- <span class="mapa-status" id="mapa-status">ROT 0° · ZOOM 1.0x · ARRASTE PARA GIRAR</span>
+ <button id="voltar" onclick="voltarBrasil()" style="display:none;border-color:var(--cyan);color:var(--cyan)">← VOLTAR AO BRASIL</button>
+ <span class="mapa-status" id="mapa-status">VISÃO BRASIL · ROT 0° · ZOOM 1.0x · CLIQUE NUM ESTADO</span>
 </div>
 <div class="mapa-wrap">
  <div class="mapa-palco">
@@ -623,7 +693,7 @@ def main():
     parser.add_argument("--tabela", default="resultados_consolidados/epibuilder_completo.tsv")
     parser.add_argument("--laudos", default="resultados_consolidados/laudos.txt")
     parser.add_argument("--vfdb", default="banco_dados/VFDB_S.pyogenes.fas")
-    parser.add_argument("--geo", default="banco_dados/sc_municipios.json")
+    parser.add_argument("--geo", default="banco_dados/brasil_geo.json")
     parser.add_argument("--saida", default="resultados_consolidados/dashboard.html")
     parser.add_argument("--min-pident", default="90")
     parser.add_argument("--min-qcov", default="70")

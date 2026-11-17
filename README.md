@@ -154,7 +154,8 @@ em biologia, com referências em ABNT, relevância para o TCC e ordem de leitura
 | `scripts/juntar_metadados.py` | Junta QC e metadados clínico-epidemiológicos por `ID_Amostra`. |
 | `scripts/relatorio_lote.py` | Gera o relatório Markdown resumido do lote. |
 | `scripts/relatorio_html.py` | Gera o dashboard HTML autocontido (visualização offline). |
-| `scripts/preparar_mapa.py` | Prepara o vetor simplificado de SC usado no mapa 3D (execução única). |
+| `scripts/preparar_mapa.py` | Prepara o vetor simplificado de SC (execução única). |
+| `scripts/preparar_mapa_brasil.py` | Prepara estados + municípios do Brasil para o mapa 3D (execução única). |
 | `scripts/prepara_epibuilder.py` | Parsers de emm/VFDB e geração individual da tabela. |
 | `scripts/vigilancia_bot.py` | Gera os laudos via Ollama para as amostras de *S. pyogenes*. |
 | `scripts/rag_vigilancia.py` | Constrói o dicionário de genes do VFDB (diagnóstico). |
@@ -168,7 +169,8 @@ teste_emmtyper/
 ├── banco_dados/
 │   ├── VFDB_S.pyogenes.fas
 │   ├── vfdb_pyogenes_index.*    # índice BLAST do VFDB
-│   └── sc_municipios.json       # vetor simplificado de SC (mapa 3D)
+│   ├── sc_municipios.json       # vetor simplificado de SC (legado)
+│   └── brasil_geo.json          # estados + municípios do Brasil (mapa 3D)
 ├── docs/                        # painel de validação, arquitetura e metadados de exemplo
 ├── scripts/
 ├── resultados_blast/            # logs do emmtyper e BLAST bruto
@@ -202,12 +204,14 @@ dependências, e pode ser aberto no navegador ou anexado a um e-mail.
 O painel mostra:
 
 - cartões com total de amostras, tipos *emm*, alertas vermelhos e QC aprovado;
-- **mapa tático 3D** (projeção isométrica, estilo iDroid) dos municípios de SC:
-  polígonos com extrusão, marcadores com o ID da amostra e o alerta ao lado, e
-  uma caixa clicável com os dados completos da amostra. O mapa gira **360°**
-  (arraste com o mouse/toque ou use o slider), tem **zoom** (roda do mouse ou
-  botões +/−), botão **RESET** e uma **legenda clicável abaixo do mapa** com
-  todas as amostras (mesmo clique da caixa de detalhes);
+- **mapa tático 3D do Brasil** (projeção isométrica, estilo iDroid): os 27
+  estados são desenhados com siglas e **pins de todas as amostras** já na visão
+  geral. Clicar num estado o destaca, aplica zoom e abre a visão municipal
+  daquele estado (5.523 municípios no total), com a mesma extrusão 3D e os pins
+  por cidade; o botão **← VOLTAR AO BRASIL** retorna à visão geral.
+  O mapa gira **360°** (arraste/slider), tem **zoom** (roda ou botões +/−),
+  **RESET**, botão de **tela cheia**, e uma **legenda clicável abaixo do mapa**
+  que abre os detalhes da amostra;
 - gráficos de distribuição de *emm*, evolução mensal, municípios e categorias
   funcionais do VFDB;
 - tabela filtrável (busca livre, *emm*, município e alerta) com exportação TSV;
@@ -220,13 +224,15 @@ source config.sh
 "$CONDA_PREFIX/bin/python" scripts/relatorio_html.py
 ```
 
-O mapa usa `banco_dados/sc_municipios.json` (293 municípios simplificados),
-gerado uma única vez a partir do GeoJSON público do projeto
-[tbrugz/geodata-br](https://github.com/tbrugz/geodata-br). Para atualizar o
-vetor, baixe `geojs-42-mun.json` e rode:
+O mapa usa `banco_dados/brasil_geo.json` (27 estados e 5.523 municípios
+simplificados, ~1,9 MB), gerado uma única vez a partir dos GeoJSONs públicos
+[tbrugz/geodata-br](https://github.com/tbrugz/geodata-br) (municípios) e
+[brazil-states](https://github.com/codeforgermany/click_that_hood) (estados).
+Para atualizar o vetor, coloque `estados.json` e os `mun_<codigo>.json` numa
+pasta e rode:
 
 ```bash
-python3 scripts/preparar_mapa.py /caminho/geojs-42-mun.json
+python3 scripts/preparar_mapa_brasil.py /caminho/da/pasta
 ```
 
 Escolha de design: o HTML é o formato de baixa fricção para o TCC e as primeiras
@@ -242,6 +248,13 @@ Use `--metadados CAMINHO` com um CSV ou TSV que tenha uma coluna de identificaç
 (`ID_Amostra`, `ID`, `Amostra`, `Sample` ou `sample_id`). Colunas recomendadas:
 `Data_Coleta`, `Municipio`, `UF`, `Sitio_Anatomico`, `Desfecho`, `Idade` e `Sexo`.
 Um exemplo está em [`docs/metadados_exemplo.tsv`](docs/metadados_exemplo.tsv).
+
+> **Procedência dos dados de exemplo (importante):** os 12 genomas são reais,
+> obtidos do NCBI RefSeq, mas **todos os metadados clínicos/epidemiológicos
+> (`Municipio`, `Data_Coleta`, `Sitio_Anatomico`, `Desfecho`, `Idade`, `Sexo`)
+> são fictícios**, criados apenas para validar a pipeline. Nenhuma amostra real
+> de Santa Catarina foi processada até agora. Os laudos e alertas do dashboard
+> de demonstração derivam desses metadados sintéticos.
 
 Amostras sem metadados recebem `NA`; metadados sem assembly correspondente são
 apenas reportados. **Dados clínicos reais não devem ser versionados** — mantenha-os
