@@ -1,53 +1,61 @@
-# Painel de validação — *Streptococcus pyogenes*
+# Painel de validação — *Streptococcus pyogenes* (30 genomas)
 
-Painel de 12 genomas completos de *S. pyogenes* usado para validar a
-tipagem *emm* e o perfil de virulência (VFDB) da pipeline.
+Painel de 30 genomas completos de *S. pyogenes* usado para validar a tipagem *emm* e o perfil de virulência (VFDB) da pipeline.
 
-| ID | Tipo emm | Genes VFDB | Estirpe |
-|---|---|---:|---|
-| `GCF_000006785` | EMM1.6 | 224 | SF370 (M1 GAS) |
-| `GCF_000167435` | EMM49.1 | 180 | M49 591 |
-| `GCF_000756485` | EMM23.0 | 215 | M23ND |
-| `GCF_001014305` | EMM6.52 | 220 | D471 |
-| `GCF_001020185` | EMM28.0 | 219 | M28PF1 |
-| `GCF_001620285` | EMM53.0 | 220 | AP53 |
-| `GCF_001635895` | EMM89.0 | 218 | MGAS11027 |
-| `GCF_001635975` | EMM89.0 | 189 | MGAS27061 |
-| `GCF_002355175` | EMM3.1 | 229 | M3-b |
-| `GCF_003640605` | EMM4.0 | 189 | SASM4-Duke |
-| `GCF_004135875` | EMM75.0 | 199 | M75 |
-| `GCF_022869605` | EMM1.0 | 223 | PartK-Spyogenes-RM8376 |
+| ID | Tipo emm | Genes VFDB | Município (sintético) | UF |
+|---|---|---:|---|---|
+| `GCF_000006785` | EMM1.6 | 224 | Florianopolis | SC |
+| `GCF_000167435` | EMM49.1 | 180 | Joinville | SC |
+| `GCF_000756485` | EMM23.0 | 215 | Blumenau | SC |
+| `GCF_001014305` | EMM6.52 | 220 | Chapeco | SC |
+| `GCF_001020185` | EMM28.0 | 219 | Criciuma | SC |
+| `GCF_001620285` | EMM53.0 | 220 | Itajai | SC |
+| `GCF_001635895` | EMM89.0 | 218 | Lages | SC |
+| `GCF_001635975` | EMM89.0 | 189 | Balneario_Camboriu | SC |
+| `GCF_002055535` | EMM1.0 | 223 | Petropolis | RJ |
+| `GCF_002355175` | EMM3.1 | 229 | Florianopolis | SC |
+| `GCF_003640605` | EMM4.0 | 189 | Joinville | SC |
+| `GCF_004028355` | EMM1.0 | 223 | Belo_Horizonte | MG |
+| `GCF_004124075` | EMM77.0 | 199 | Niteroi | RJ |
+| `GCF_004135875` | EMM75.0 | 199 | Blumenau | SC |
+| `GCF_006364235` | EMM1.0 | 223 | Salvador | BA |
+| `GCF_009832845` | EMM238.1 | 209 | Fortaleza | CE |
+| `GCF_020826935` | EMM9.0 | 210 | Guarulhos | SP |
+| `GCF_022869605` | EMM1.0 | 223 | Criciuma | SC |
+| `GCF_029637645` | EMM1.0 | 222 | Brasilia | DF |
+| `GCF_041071735` | EMM77.0 | 199 | Curitiba | PR |
+| `GCF_041072535` | EMM77.0 | 189 | Itajai | SC |
+| `GCF_041072725` | EMM77.0 | 200 | Porto_Alegre | RS |
+| `GCF_041072835` | EMM77.0 | 199 | Santos | SP |
+| `GCF_041073745` | EMM77.0 | 199 | Campinas | SP |
+| `GCF_041074825` | EMM77.0 | 201 | Joinville | SC |
+| `GCF_041430535` | EMM94.1 | 204 | Blumenau | SC |
+| `GCF_044361195` | EMM82.0 | 225 | Manaus | AM |
+| `GCF_056673615` | EMM58.0 | 214 | Recife | PE |
+| `GCF_057980765` | EMM28.0 | 219 | Florianopolis | SC |
+| `GCF_900475035` | EMM83.1 | 206 | Sao_Paulo | SP |
 
 ## Resultado
 
-- 12/12 amostras classificadas como *S. pyogenes*.
-- 11 tipos emm distintos: EMM1.0, EMM1.6, EMM23.0, EMM28.0, EMM3.1, EMM4.0, EMM49.1, EMM53.0, EMM6.52, EMM75.0, EMM89.0.
-- 0 falhas de tipagem ou de BLAST.
-- QC de montagem: 12/12 `OK` — 1 contig por amostra, 1,74–1,91 Mb,
-  GC 38,35–38,63%, 0 `N`.
-- Laudos gerados para todas as amostras (ver `resultados_consolidados/laudos.txt`).
+- 30/30 amostras classificadas como *S. pyogenes*; **0** `NAO_S_PYOGENES` e **0** `NAO_PROCESSADO`.
+- 18 tipos emm distintos: EMM1.0, EMM1.6, EMM23.0, EMM238.1, EMM28.0, EMM3.1, EMM4.0, EMM49.1, EMM53.0, EMM58.0, EMM6.52, EMM75.0, EMM77.0, EMM82.0, EMM83.1, EMM89.0, EMM9.0, EMM94.1.
+- 0 falhas de tipagem ou de BLAST; QC de montagem 30/30 `OK`.
+- 30 laudos gerados via Ollama (todos `[ALERTA VERMELHO]` no painel atual, por presença de superantígenos).
 
-## Proveniência
+## Procedência e filtros
 
-Genomas completos obtidos do NCBI RefSeq com o comando:
+Os assemblies foram obtidos da **NCBI Datasets API** (`taxon 1314` = *Streptococcus pyogenes*) em 17/11/2026, com os seguintes filtros:
+- `organism_name` exatamente `Streptococcus pyogenes`;
+- `assembly_level = Complete Genome`;
+- apenas acessos **RefSeq (`GCF_`)**;
+- nenhum accession repetido em relação às 12 amostras originais.
 
-```bash
-datasets download genome accession \
-  GCF_002355175.1,GCF_001020185.2,GCF_000167435.2,GCF_001620285.1,GCF_004135875.1,\
-  GCF_000756485.1,GCF_001635895.1,GCF_001635975.1,GCF_003640605.1,GCF_001014305.1 \
-  --include genome --filename painel_spyogenes.zip
-```
+Endpoint: `https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/taxon/1314/dataset_report`
 
-Os dois genomas já existentes (`GCF_000006785.2` e `GCF_022869605.1`) foram
-mantidos. As cinco amostras de outras espécies usadas inicialmente como
-controles negativos foram removidas de `entrada/`.
+> **Atenção:** os genomas são reais, mas `Municipio`, `Data_Coleta`, `Sitio_Anatomico`, `Desfecho`, `Idade` e `Sexo` são **metadados sintéticos** de `docs/metadados_exemplo.tsv`, criados apenas para exercitar a pipeline e o mapa. Nenhuma amostra clínica real foi processada.
 
 ## Reprodução
 
 ```bash
-# Lote completo (QC + tipagem + VFDB + laudos + relatório)
-./pipeline_principal.sh
-
-# Validação rápida com metadados de exemplo (sem laudos)
-./pipeline_principal.sh --sem-laudos --metadados docs/metadados_exemplo.tsv
+./pipeline_principal.sh --metadados docs/metadados_exemplo.tsv
 ```

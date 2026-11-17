@@ -79,18 +79,18 @@ cd ~/teste_emmtyper
 ./pipeline_principal.sh --sem-laudos --metadados docs/metadados_exemplo.tsv
 ```
 
-O teste usa as 12 montagens de `entrada/` e deve terminar com **12/12 amostras
-processadas, 0 falhas, QC 12/12 `OK` e 11 tipos emm distintos**. Confira com:
+O teste usa as 30 montagens de `entrada/` e deve terminar com **30/30 amostras
+processadas, 0 falhas, QC 30/30 `OK` e 18 tipos emm distintos**. Confira com:
 
 ```bash
 wc -l resultados_consolidados/epibuilder_completo.tsv
-# 13 linhas (cabeçalho + 12 amostras)
+# 31 linhas (cabeçalho + 30 amostras)
 
 tail -n +2 resultados_consolidados/epibuilder_completo.tsv | cut -f2 | sort -u | wc -l
-# 11 tipos emm distintos
+# 18 tipos emm distintos
 
 grep -c "OK" resultados_consolidados/qc_montagem.tsv
-# 12
+# 30
 ```
 
 Para o teste completo, com laudos:
@@ -124,10 +124,10 @@ da sessão SSH; `setsid`/`nohup`/`tmux` protegem contra isso.
 
 ## Validação
 
-O painel em `entrada/` contém **12 genomas completos de *S. pyogenes*** com
-**11 tipos emm distintos** (EMM1.0, EMM1.6, EMM3.1, EMM4.0, EMM6.52, EMM23.0,
-EMM28.0, EMM49.1, EMM53.0, EMM75.0 e EMM89.0). O resultado detalhado está em
-[`docs/painel_validacao.md`](docs/painel_validacao.md).
+O painel em `entrada/` contém **30 genomas completos de *S. pyogenes*** com
+**18 tipos emm distintos**, selecionados da NCBI Datasets pelo taxon 1314,
+nível *Complete Genome* e acessos RefSeq (GCF), sem duplicatas. O resultado
+detalhado está em [`docs/painel_validacao.md`](docs/painel_validacao.md).
 
 As cinco amostras de outras espécies usadas inicialmente como controles
 negativos foram removidas de `entrada/`.
@@ -249,7 +249,7 @@ Use `--metadados CAMINHO` com um CSV ou TSV que tenha uma coluna de identificaç
 `Data_Coleta`, `Municipio`, `UF`, `Sitio_Anatomico`, `Desfecho`, `Idade` e `Sexo`.
 Um exemplo está em [`docs/metadados_exemplo.tsv`](docs/metadados_exemplo.tsv).
 
-> **Procedência dos dados de exemplo (importante):** os 12 genomas são reais,
+> **Procedência dos dados de exemplo (importante):** os 30 genomas são reais,
 > obtidos do NCBI RefSeq, mas **todos os metadados clínicos/epidemiológicos
 > (`Municipio`, `Data_Coleta`, `Sitio_Anatomico`, `Desfecho`, `Idade`, `Sexo`)
 > são fictícios**, criados apenas para validar a pipeline. Nenhuma amostra real
