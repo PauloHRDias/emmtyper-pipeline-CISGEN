@@ -208,12 +208,17 @@ padding:1px 5px;margin:2px;font:10px var(--mono)}
 footer{font:10px/1.6 var(--mono);letter-spacing:.6px;color:var(--muted);text-transform:uppercase;
 margin:22px 0;padding-top:12px;border-top:1px solid var(--cyan)}
 /* mapa tatico 3D (estilo iDroid / MGSV) */
+.panel h2 .expandir{margin-left:auto;border-color:var(--cyan);color:var(--cyan)}
+.mapa-panel.expandido{position:fixed;inset:0;z-index:1000;margin:0;overflow:auto;border-radius:0;
+box-shadow:0 0 0 100vmax rgba(4,28,48,.55)}
+.mapa-panel.expandido .mapa-canvas{height:calc(100vh - 230px)}
+.mapa-panel.expandido #mapa{height:100%}
 .mapa-controles{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
 .mapa-controles button{min-width:64px}
 .mapa-controles input[type=range]{width:190px;accent-color:var(--cyan);padding:0;border:none;background:transparent}
 .mapa-status{font:9px var(--mono);letter-spacing:1.2px;color:var(--muted);margin-left:auto;text-transform:uppercase}
-.mapa-wrap{position:relative;display:grid;grid-template-columns:1fr 300px;gap:14px}
-@media(max-width:920px){.mapa-wrap{grid-template-columns:1fr}}
+.mapa-wrap{position:relative;display:block}
+.mapa-palco{position:relative}
 .mapa-canvas{position:relative;background:linear-gradient(180deg,#f5fbff,#e4f2ff);
 border:1px solid var(--line);overflow:hidden;cursor:grab}
 .mapa-canvas:active{cursor:grabbing}
@@ -239,7 +244,8 @@ font:9px var(--mono);letter-spacing:1.6px;color:#5f89a6;z-index:2}
 .marker text{font:16px var(--mono);fill:#073d6b;paint-order:stroke;stroke:#fff;stroke-width:3px}
 .marker:hover polygon{fill:#e8343c;filter:drop-shadow(0 0 7px #e8343c)}
 .info-box{background:#fff;border:1px solid var(--cyan);padding:14px 14px 14px 16px;
-font:11px/1.6 var(--mono);position:relative;box-shadow:inset 3px 0 0 var(--cyan)}
+font:11px/1.6 var(--mono);position:absolute;right:12px;top:12px;width:300px;z-index:5;
+max-height:calc(100% - 24px);overflow:auto;box-shadow:inset 3px 0 0 var(--cyan),0 4px 18px rgba(4,52,88,.18)}
 .info-box.hidden{display:none}
 .info-box h3{margin:0 0 10px;font:11px var(--mono);letter-spacing:1.4px;color:#0a4f85;text-transform:uppercase}
 .info-box .fechar{position:absolute;right:8px;top:8px;border:1px solid var(--line);background:#fff;
@@ -424,6 +430,13 @@ function zoomMapa(fator){
   zoom=Math.max(0.5,Math.min(6,zoom*fator));
   agendarMapa();
 }
+function toggleExpandir(){
+  const p=document.getElementById('painel-mapa');
+  if(!p) return;
+  const aberto=p.classList.toggle('expandido');
+  const b=p.querySelector('.expandir');
+  if(b) b.textContent=aberto?'⛶ REDUZIR':'⛶ EXPANDIR';
+}
 function resetMapa(){
   rot=0; zoom=1;
   const sl=document.getElementById('rot'); if(sl) sl.value=0;
@@ -570,7 +583,8 @@ def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov, 
  <div class="panel"><h2><span class="id">03</span> Amostras por município</h2><div id="c-municipio"></div></div>
  <div class="panel"><h2><span class="id">04</span> Categorias funcionais VFDB</h2><div id="c-categorias"></div></div>
 </div>
-<div class="panel"><h2><span class="id">06</span> Mapa tático 3D · amostras por município</h2>
+<div class="panel mapa-panel" id="painel-mapa"><h2><span class="id">06</span> Mapa tático 3D · amostras por município
+ <button class="expandir" onclick="toggleExpandir()">⛶ EXPANDIR</button></h2>
 <div class="mapa-controles">
  <button onclick="girar(-15)">↺ 15°</button>
  <input type="range" id="rot" min="0" max="360" value="0" title="Rotação 0–360°">
@@ -581,11 +595,13 @@ def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov, 
  <span class="mapa-status" id="mapa-status">ROT 0° · ZOOM 1.0x · ARRASTE PARA GIRAR</span>
 </div>
 <div class="mapa-wrap">
+ <div class="mapa-palco">
  <div class="mapa-canvas"><svg id="mapa" viewBox="0 0 1300 980" role="img" aria-label="Mapa 3D de Santa Catarina com amostras"></svg></div>
  <aside class="info-box hidden" id="info-box">
   <button class="fechar" onclick="fecharInfo()">✕ FECHAR</button>
   <h3 id="ib-titulo">AMOSTRA</h3><div id="ib-conteudo"></div>
  </aside>
+ </div>
  <div class="legenda" id="legenda"></div>
 </div></div>
 <div class="panel"><h2><span class="id">05</span> Amostras · clique para abrir o laudo</h2>
