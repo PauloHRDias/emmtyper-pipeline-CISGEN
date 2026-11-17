@@ -139,38 +139,75 @@ def construir_dados(linhas, laudos, vfdb):
 
 
 CSS = """
-:root{--bg:#f4f6f9;--card:#fff;--ink:#16202c;--muted:#66737f;--line:#dfe5ec;
---blue:#1565c0;--red:#c62828;--amber:#ef6c00;--green:#2e7d32;--soft:#eaf1fb}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
-font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-header{background:#0d2b45;color:#fff;padding:22px 28px}
-header h1{margin:0;font-size:21px}header p{margin:5px 0 0;color:#bcd2e6;font-size:13px}
-main{max-width:1220px;margin:20px auto;padding:0 20px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:15px;
-box-shadow:0 1px 3px #0000000d}.card .num{font-size:27px;font-weight:700}.card .lbl{color:var(--muted);font-size:12px}
-.card.red .num{color:var(--red)}.card.green .num{color:var(--green)}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:16px}
-.panel h2{margin:0 0 12px;font-size:15px;color:#0d2b45}
-.controles{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.controles input,.controles select,button{padding:8px 10px;border:1px solid var(--line);
-border-radius:7px;background:#fff;color:var(--ink);font-size:13px}
-button{cursor:pointer;background:var(--soft);border-color:#b9d0ec}
-button:hover{background:#dbe9fa}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:800px){.grid2{grid-template-columns:1fr}}
-svg{width:100%;height:auto;max-height:280px}.bar-label{font-size:11px;fill:var(--ink)}
-.bar-val{font-size:11px;fill:var(--muted)}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
-th{background:#f7f9fc;color:#40525f;cursor:pointer;white-space:nowrap}
-tr.amostra:hover{background:#f3f8ff;cursor:pointer}
-.tag{padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
-.tag.VERMELHO{background:#fdecea;color:var(--red)}.tag.AMARELO{background:#fff3e0;color:var(--amber)}
-.tag.PADRAO{background:#e8f5e9;color:var(--green)}.tag.SEM_LAUDO{background:#eceff1;color:var(--muted)}
-.detail td{background:#f8fafc;white-space:normal}.detail .laudo{line-height:1.65}
-.gene{display:inline-block;background:#edf2f7;border-radius:4px;padding:1px 5px;margin:2px;font-size:11px}
-footer{color:var(--muted);font-size:12px;margin:22px 0;padding-top:12px;border-top:1px solid var(--line)}
-@media print{header{background:#fff;color:#000}body{background:#fff}.panel,.card{box-shadow:none}.controles{display:none}}
+:root{--bg:#f3f8fd;--surface:#fff;--ink:#0b2b45;--muted:#6e8ba3;--line:#cfe3f2;
+--blue:#0a7fd4;--cyan:#00b8e6;--red:#e8343c;--amber:#f08a24;--green:#00a86b;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+font:13px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+body{background-image:linear-gradient(rgba(10,127,212,.035) 1px,transparent 1px),
+linear-gradient(90deg,rgba(10,127,212,.035) 1px,transparent 1px);background-size:34px 34px}
+.scan{position:fixed;inset:0;pointer-events:none;z-index:99;
+background:repeating-linear-gradient(0deg,rgba(0,184,230,.022) 0 1px,transparent 1px 4px)}
+::selection{background:#bfeaff;color:#062238}
+header{position:relative;background:var(--surface);border-bottom:2px solid var(--cyan);
+padding:18px 28px 16px;box-shadow:0 2px 14px rgba(10,80,140,.07)}
+header .overline{font:10px/1 var(--mono);letter-spacing:2.4px;color:var(--blue);text-transform:uppercase}
+header h1{margin:9px 0 4px;font-size:20px;font-weight:600;letter-spacing:.3px}
+header h1 i{font-weight:400;color:var(--blue)}
+header p{margin:0;color:var(--muted);font:11px/1.5 var(--mono)}
+.status{position:absolute;right:28px;top:20px;font:10px var(--mono);letter-spacing:1.5px;color:var(--green)}
+.status b{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);
+box-shadow:0 0 8px var(--green);margin-right:7px;animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.35;box-shadow:0 0 2px var(--green)}}
+.hud-line{height:1px;background:linear-gradient(90deg,var(--cyan),transparent);margin-top:12px}
+main{max-width:1240px;margin:22px auto;padding:0 20px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:13px;margin-bottom:18px}
+.card{position:relative;background:var(--surface);border:1px solid var(--line);padding:16px 18px;
+box-shadow:0 2px 10px rgba(10,80,140,.05)}
+.card::before,.card::after{content:"";position:absolute;width:9px;height:9px;border-color:var(--cyan);border-style:solid}
+.card::before{left:-1px;top:-1px;border-width:2px 0 0 2px}
+.card::after{right:-1px;bottom:-1px;border-width:0 2px 2px 0}
+.card .num{font:600 30px/1.1 var(--mono);color:#072f52;letter-spacing:-1px;text-shadow:0 0 12px rgba(0,184,230,.28)}
+.card .lbl{font:10px/1.3 var(--mono);letter-spacing:1.6px;color:var(--muted);text-transform:uppercase;margin-top:8px}
+.card.red .num{color:var(--red);text-shadow:0 0 12px rgba(232,52,60,.25)}
+.card.green .num{color:var(--green)}
+.panel{position:relative;background:var(--surface);border:1px solid var(--line);padding:18px 20px;margin-bottom:16px;
+box-shadow:0 2px 10px rgba(10,80,140,.05)}
+.panel h2{margin:0 0 14px;font:11px/1.4 var(--mono);text-transform:uppercase;letter-spacing:2px;color:#0a4f85;
+display:flex;align-items:center;gap:9px}
+.panel h2 .id{display:inline-grid;place-items:center;width:20px;height:20px;background:#e6f6ff;
+border:1px solid var(--cyan);color:var(--blue);font:10px var(--mono);letter-spacing:0}
+.controles{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.controles input,.controles select,button{font:12px var(--mono);padding:8px 10px;border:1px solid var(--line);
+border-radius:0;background:#fff;color:var(--ink);outline:none}
+.controles input:focus,.controles select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,184,230,.12)}
+button{cursor:pointer;text-transform:uppercase;letter-spacing:1.2px;font-size:10px;border-color:var(--blue);color:var(--blue)}
+button:hover{background:#e9f7ff;box-shadow:0 0 10px rgba(0,184,230,.22)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:840px){.grid2{grid-template-columns:1fr}header .status{position:static;display:block;margin-top:10px}}
+svg{width:100%;height:auto;max-height:280px;overflow:visible}
+.bar-label{font:10px var(--mono);fill:#17486e}.bar-val{font:10px var(--mono);fill:#5c7f99}
+rect.bar{filter:drop-shadow(0 0 4px rgba(0,184,230,.35))}
+table{width:100%;border-collapse:collapse;font:12px/1.5 -apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid #e3eef7;vertical-align:top}
+th{background:#eef7ff;color:#0a4f85;font:10px var(--mono);text-transform:uppercase;letter-spacing:1.3px;
+border-bottom:1px solid var(--cyan);white-space:nowrap}
+tr.amostra:hover{background:#f2fbff}
+td:first-child{font:12px var(--mono);color:#073d6b;font-weight:600}
+.tag{padding:3px 8px;border:1px solid currentColor;border-radius:2px;font:10px var(--mono);
+letter-spacing:.8px;text-transform:uppercase;white-space:nowrap;background:#fff}
+.tag.VERMELHO{color:var(--red);box-shadow:0 0 8px rgba(232,52,60,.18)}
+.tag.AMARELO{color:var(--amber);box-shadow:0 0 8px rgba(240,138,36,.18)}
+.tag.PADRAO{color:var(--green);box-shadow:0 0 8px rgba(0,168,107,.18)}
+.tag.SEM_LAUDO{color:var(--muted)}
+.detail td{background:#f8fdff;border-left:2px solid var(--cyan)}
+.detail .laudo{line-height:1.7;font-size:12px}
+.gene{display:inline-block;background:#f0faff;border:1px solid #bfe6f5;color:#0a5f8a;
+padding:1px 5px;margin:2px;font:10px var(--mono)}
+footer{font:10px/1.6 var(--mono);letter-spacing:.6px;color:var(--muted);text-transform:uppercase;
+margin:22px 0;padding-top:12px;border-top:1px solid var(--cyan)}
+@media print{.scan{display:none}header{box-shadow:none}.controles{display:none}body{background:#fff}}
 """
 
 JS = r"""
@@ -212,7 +249,7 @@ function barras(id, pares, cor){
     const w = Math.max(2, (val/max)*(W-L-34));
     const y = i*linha+4;
     svg += `<text x="0" y="${y+13}" class="bar-label">${esc(rot.length>15?rot.slice(0,14)+'…':rot)}</text>`;
-    svg += `<rect x="${L}" y="${y+3}" width="${w}" height="15" rx="3" fill="${cor}"/>`;
+    svg += `<rect class="bar" x="${L}" y="${y+3}" width="${w}" height="13" rx="1" fill="${cor}"/>`;
     svg += `<text x="${L+w+4}" y="${y+14}" class="bar-val">${val}</text>`;
   });
   document.getElementById(id).innerHTML = svg + '</svg>';
@@ -225,8 +262,8 @@ function linha(id, pares){
   const pts=pares.map((p,i)=>[pad+i*((W-2*pad)/Math.max(1,pares.length-1)), H-pad-(p[1]/max)*(H-2*pad)]);
   let svg=`<svg viewBox="0 0 ${W} ${H}" role="img">`;
   for(let g=0;g<=2;g++){const y=pad+g*(H-2*pad)/2;svg+=`<line x1="${pad}" y1="${y}" x2="${W-pad}" y2="${y}" stroke="#e3e8ee"/>`;}
-  svg+='<polyline fill="none" stroke="#1565c0" stroke-width="2.5" points="'+pts.map(p=>p.join(',')).join(' ')+'"/>';
-  pts.forEach((p,i)=>{svg+=`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="#1565c0"/><text x="${p[0]}" y="${H-8}" text-anchor="middle" class="bar-val">${esc(pares[i][0].slice(2))}</text>`;});
+  svg+='<polyline fill="none" stroke="#0a7fd4" stroke-width="2" points="'+pts.map(p=>p.join(',')).join(' ')+'" style="filter:drop-shadow(0 0 4px rgba(0,184,230,.5))"/>';
+  pts.forEach((p,i)=>{svg+=`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="#00b8e6"/><text x="${p[0]}" y="${H-8}" text-anchor="middle" class="bar-val">${esc(pares[i][0].slice(2))}</text>`;});
   document.getElementById(id).innerHTML=svg+'</svg>';
 }
 
@@ -259,12 +296,12 @@ function render(){
   document.getElementById('k-emm').textContent=new Set(rows.map(r=>r.emm)).size;
   document.getElementById('k-vermelho').textContent=rows.filter(r=>r.tag==='VERMELHO').length;
   document.getElementById('k-qc').textContent=rows.filter(r=>r.qc==='OK').length+'/'+rows.length;
-  barras('c-emm',contar(rows,r=>r.emm),'#1565c0');
+  barras('c-emm',contar(rows,r=>r.emm),'#0a7fd4');
   linha('c-tempo',contar(rows,r=>r.mes));
-  barras('c-municipio',contar(rows,r=>r.municipio).filter(p=>p[0]!=='NA'),'#00838f');
+  barras('c-municipio',contar(rows,r=>r.municipio).filter(p=>p[0]!=='NA'),'#00b8e6');
   const cat={};
   rows.forEach(r=>Object.entries(r.categorias).forEach(([k,v])=>cat[k]=(cat[k]||0)+v));
-  barras('c-categorias',Object.entries(cat).sort((a,b)=>b[1]-a[1]),'#6a1b9a');
+  barras('c-categorias',Object.entries(cat).sort((a,b)=>b[1]-a[1]),'#0090c8');
   tabela(rows);
 }
 
@@ -304,8 +341,11 @@ def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov):
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CIGenS/SC — Dashboard de vigilância</title>
 <style>{CSS}</style></head><body>
-<header><h1>CIGenS/SC · Vigilância de <i>Streptococcus pyogenes</i></h1>
-<p>Painel de leitura epidemiológica · gerado em {agora} · fonte: {html.escape(Path(caminho_tabela).name)}{modelo}</p></header>
+<div class="scan"></div>
+<header><div class="overline">CIGenS // Módulo de vigilância genômica · SYS.01</div>
+<h1>VIGILÂNCIA DE <i>STREPTOCOCCUS PYOGENES</i></h1>
+<p>PAINEL DE LEITURA EPIDEMIOLÓGICA · GERADO EM {agora} · FONTE: {html.escape(Path(caminho_tabela).name).upper()}{modelo.upper()}</p>
+<div class="status"><b></b>SISTEMA ONLINE</div><div class="hud-line"></div></header>
 <main>
 <div class="cards">
  <div class="card"><div class="num" id="k-amostras">0</div><div class="lbl">Amostras no lote</div></div>
@@ -313,7 +353,7 @@ def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov):
  <div class="card red"><div class="num" id="k-vermelho">0</div><div class="lbl">Alertas vermelhos</div></div>
  <div class="card green"><div class="num" id="k-qc">0</div><div class="lbl">QC aprovado</div></div>
 </div>
-<div class="panel"><h2>Filtros</h2><div class="controles">
+<div class="panel"><h2><span class="id">00</span> Filtros / consulta</h2><div class="controles">
  <input id="f-q" type="search" placeholder="Buscar ID, gene, município…">
  <select id="f-emm"><option value="">Todos os emm</option></select>
  <select id="f-municipio"><option value="">Todos os municípios</option></select>
@@ -324,12 +364,12 @@ def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov):
  <span id="contador" style="margin-left:auto;color:#667"></span>
 </div></div>
 <div class="grid2">
- <div class="panel"><h2>Distribuição de tipos emm</h2><div id="c-emm"></div></div>
- <div class="panel"><h2>Evolução mensal</h2><div id="c-tempo"></div></div>
- <div class="panel"><h2>Amostras por município</h2><div id="c-municipio"></div></div>
- <div class="panel"><h2>Categorias funcionais VFDB</h2><div id="c-categorias"></div></div>
+ <div class="panel"><h2><span class="id">01</span> Distribuição de tipos emm</h2><div id="c-emm"></div></div>
+ <div class="panel"><h2><span class="id">02</span> Evolução mensal</h2><div id="c-tempo"></div></div>
+ <div class="panel"><h2><span class="id">03</span> Amostras por município</h2><div id="c-municipio"></div></div>
+ <div class="panel"><h2><span class="id">04</span> Categorias funcionais VFDB</h2><div id="c-categorias"></div></div>
 </div>
-<div class="panel"><h2>Amostras (clique para ver o laudo)</h2>
+<div class="panel"><h2><span class="id">05</span> Amostras · clique para abrir o laudo</h2>
 <table><thead><tr><th>ID</th><th>emm</th><th>Município</th><th>Data</th><th>Sítio</th>
 <th>Desfecho</th><th>Genes</th><th>QC</th><th>Alerta</th></tr></thead>
 <tbody id="corpo"></tbody></table></div>
