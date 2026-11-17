@@ -203,6 +203,8 @@ dependências, e pode ser aberto no navegador ou anexado a um e-mail.
 
 O painel mostra:
 
+- cabeçalho com o **brasão vetorial da UFSC** (recolorido na paleta azul/ciano do painel),
+  extraído de `docs/logo_ufsc.svg` e embutido no HTML;
 - cartões com total de amostras, tipos *emm*, alertas vermelhos e QC aprovado;
 - **mapa tático 3D do Brasil** (projeção isométrica, estilo iDroid): os 27
   estados são desenhados com siglas e **pins de todas as amostras** já na visão
@@ -223,6 +225,11 @@ Para atualizar apenas o painel sem reprocessar os genomas:
 source config.sh
 "$CONDA_PREFIX/bin/python" scripts/relatorio_html.py
 ```
+
+O brasão da UFSC em `docs/logo_ufsc.svg` é derivado do arquivo vetorial
+`Brasao UFSC vertical extenso.svg` do
+[Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Brasao_UFSC_vertical_extenso.svg),
+com as cores adaptadas à identidade visual deste painel.
 
 O mapa usa `banco_dados/brasil_geo.json` (27 estados e 5.523 municípios
 simplificados, ~1,9 MB), gerado uma única vez a partir dos GeoJSONs públicos

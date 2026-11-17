@@ -153,6 +153,9 @@ background:repeating-linear-gradient(0deg,rgba(0,184,230,.022) 0 1px,transparent
 ::selection{background:#bfeaff;color:#062238}
 header{position:relative;background:var(--surface);border-bottom:2px solid var(--cyan);
 padding:18px 28px 16px;box-shadow:0 2px 14px rgba(10,80,140,.07)}
+.cabecalho-conteudo{display:flex;align-items:center;gap:18px}
+.logo-ufsc{width:62px;height:62px;flex:none;filter:drop-shadow(0 0 6px rgba(0,184,230,.45))}
+.logo-ufsc svg{display:block;width:100%;height:100%}
 header .overline{font:10px/1 var(--mono);letter-spacing:2.4px;color:var(--blue);text-transform:uppercase}
 header h1{margin:9px 0 4px;font-size:20px;font-weight:600;letter-spacing:.3px}
 header h1 i{font-weight:400;color:var(--blue)}
@@ -696,7 +699,7 @@ window.addEventListener('DOMContentLoaded',()=>{
 """
 
 
-def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov, geo):
+def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov, geo, logo=""):
     payload = json.dumps(dados, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
     geo_json = json.dumps(geo, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c") if geo else "{}"
     agora = datetime.now().strftime("%d/%m/%Y %H:%M")
@@ -709,10 +712,12 @@ def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov, 
 <title>CIGenS/SC — Dashboard de vigilância</title>
 <style>{CSS}</style></head><body>
 <div class="scan"></div>
-<header><div class="overline">CIGenS // Módulo de vigilância genômica · SYS.01</div>
+<header><div class="cabecalho-conteudo">
+<div class="logo-ufsc" title="Universidade Federal de Santa Catarina">{logo}</div>
+<div><div class="overline">CIGenS // Módulo de vigilância genômica · SYS.01</div>
 <h1>VIGILÂNCIA DE <i>STREPTOCOCCUS PYOGENES</i></h1>
-<p>PAINEL DE LEITURA EPIDEMIOLÓGICA · GERADO EM {agora} · FONTE: {html.escape(Path(caminho_tabela).name).upper()}{modelo.upper()}</p>
-<div class="status"><b></b>SISTEMA ONLINE</div><div class="hud-line"></div></header>
+<p>PAINEL DE LEITURA EPIDEMIOLÓGICA · GERADO EM {agora} · FONTE: {html.escape(Path(caminho_tabela).name).upper()}{modelo.upper()}</p></div>
+</div><div class="status"><b></b>SISTEMA ONLINE</div><div class="hud-line"></div></header>
 <main>
 <div class="cards">
  <div class="card"><div class="num" id="k-amostras">0</div><div class="lbl">Amostras no lote</div></div>
@@ -778,6 +783,7 @@ def main():
     parser.add_argument("--laudos", default="resultados_consolidados/laudos.txt")
     parser.add_argument("--vfdb", default="banco_dados/VFDB_S.pyogenes.fas")
     parser.add_argument("--geo", default="banco_dados/brasil_geo.json")
+    parser.add_argument("--logo", default="docs/logo_ufsc.svg")
     parser.add_argument("--saida", default="resultados_consolidados/dashboard.html")
     parser.add_argument("--min-pident", default="90")
     parser.add_argument("--min-qcov", default="70")
@@ -794,10 +800,11 @@ def main():
     geo = {}
     if Path(args.geo).is_file():
         geo = json.loads(Path(args.geo).read_text(encoding="utf-8"))
+    logo = Path(args.logo).read_text(encoding="utf-8") if Path(args.logo).is_file() else ""
     dados = construir_dados(carregar_tabela(tabela), carregar_laudos(laudos), carregar_vfdb(args.vfdb))
     saida = Path(args.saida)
     saida.parent.mkdir(parents=True, exist_ok=True)
-    saida.write_text(gerar_html(dados, tabela, laudos, args.min_pident, args.min_qcov, geo), encoding="utf-8")
+    saida.write_text(gerar_html(dados, tabela, laudos, args.min_pident, args.min_qcov, geo, logo), encoding="utf-8")
     print(f"Dashboard gerado: {saida}")
     print(f"Amostras: {len(dados)} | com laudo: {sum(1 for d in dados if d['laudo'])}")
 
