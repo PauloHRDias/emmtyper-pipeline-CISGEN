@@ -223,7 +223,7 @@ box-shadow:0 0 0 100vmax rgba(4,28,48,.55)}
 .mapa-canvas{position:relative;background:linear-gradient(180deg,#f5fbff,#e4f2ff);
 border:1px solid var(--line);overflow:hidden;cursor:grab;height:min(84vh,900px);min-height:620px}
 .mapa-canvas:active{cursor:grabbing}
-#mapa{height:100%}
+#mapa{height:100%;max-height:none}
 .estado{stroke:#79bfe8;stroke-width:1;fill:rgba(10,127,212,.06);cursor:pointer;transition:fill .18s,stroke .18s}
 .estado:hover{fill:rgba(0,184,230,.22);stroke:#00b8e6}
 .estado.ativo{fill:rgba(0,184,230,.30);stroke:#00b8e6;stroke-width:2;filter:drop-shadow(0 0 7px rgba(0,184,230,.55))}
@@ -666,7 +666,7 @@ def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov, 
 </div>
 <div class="mapa-wrap">
  <div class="mapa-palco">
- <div class="mapa-canvas"><svg id="mapa" viewBox="0 0 1300 980" role="img" aria-label="Mapa 3D de Santa Catarina com amostras"></svg></div>
+ <div class="mapa-canvas"><svg id="mapa" viewBox="0 0 1300 980" role="img" aria-label="Mapa 3D do Brasil com amostras"></svg></div>
  <aside class="info-box hidden" id="info-box">
   <button class="fechar" onclick="fecharInfo()">✕ FECHAR</button>
   <h3 id="ib-titulo">AMOSTRA</h3><div id="ib-conteudo"></div>
