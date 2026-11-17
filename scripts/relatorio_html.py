@@ -207,7 +207,36 @@ letter-spacing:.8px;text-transform:uppercase;white-space:nowrap;background:#fff}
 padding:1px 5px;margin:2px;font:10px var(--mono)}
 footer{font:10px/1.6 var(--mono);letter-spacing:.6px;color:var(--muted);text-transform:uppercase;
 margin:22px 0;padding-top:12px;border-top:1px solid var(--cyan)}
-@media print{.scan{display:none}header{box-shadow:none}.controles{display:none}body{background:#fff}}
+/* mapa tatico 3D (estilo iDroid / MGSV) */
+.mapa-wrap{position:relative;display:grid;grid-template-columns:1fr 300px;gap:14px}
+@media(max-width:920px){.mapa-wrap{grid-template-columns:1fr}}
+.mapa-canvas{position:relative;background:linear-gradient(180deg,#f5fbff,#e4f2ff);
+border:1px solid var(--line);overflow:hidden}
+.mapa-canvas::after{content:"";position:absolute;inset:0;pointer-events:none;
+background:repeating-linear-gradient(0deg,rgba(0,184,230,.035) 0 1px,transparent 1px 5px)}
+.mapa-canvas::before{content:"TOP VIEW // SC-3D // ESCALA TATICA";position:absolute;left:10px;top:8px;
+font:9px var(--mono);letter-spacing:1.6px;color:#5f89a6;z-index:2}
+#mapa{display:block;width:100%;height:auto}
+.mun{stroke:#7abfe6;stroke-width:.6;fill:rgba(10,127,212,.05)}
+.mun.ativo{fill:rgba(0,184,230,.18);stroke:#00b8e6;stroke-width:1.3}
+.mun-side{fill:rgba(0,152,200,.22);stroke:none}
+.mun-top{fill:rgba(255,255,255,.78);stroke:#00a8d8;stroke-width:.9}
+.grid-linha{stroke:rgba(10,127,212,.14);stroke-width:.6}
+.marker{cursor:pointer}
+.marker line{stroke:#00b8e6;stroke-width:1}
+.marker polygon{fill:#00b8e6;filter:drop-shadow(0 0 5px #00d9ff)}
+.marker text{font:10px var(--mono);fill:#073d6b}
+.marker:hover polygon{fill:#e8343c;filter:drop-shadow(0 0 7px #e8343c)}
+.info-box{background:#fff;border:1px solid var(--cyan);padding:14px 14px 14px 16px;
+font:11px/1.6 var(--mono);position:relative;box-shadow:inset 3px 0 0 var(--cyan)}
+.info-box.hidden{display:none}
+.info-box h3{margin:0 0 10px;font:11px var(--mono);letter-spacing:1.4px;color:#0a4f85;text-transform:uppercase}
+.info-box .fechar{position:absolute;right:8px;top:8px;border:1px solid var(--line);background:#fff;
+padding:2px 7px;cursor:pointer;font:9px var(--mono)}
+.info-box .linha{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #e3eef7;padding:3px 0}
+.info-box .linha span:first-child{color:var(--muted);text-transform:uppercase;font-size:9px;letter-spacing:1px}
+.info-box .laudo{font:11px/1.65 -apple-system,"Segoe UI",sans-serif;margin-top:10px;color:#25455f}
+@media print{.scan{display:none}header{box-shadow:none}.controles{display:none}.info-box{display:none}body{background:#fff}}
 """
 
 JS = r"""
@@ -290,6 +319,89 @@ function abrir(id){
   if(el) el.style.display = el.style.display==='none' ? 'table-row' : 'none';
 }
 
+/* ---- Mapa tatico 3D (projecao isometrica dos municipios de SC) ---- */
+const GEO = JSON.parse(document.getElementById('geo').textContent || '{}');
+const ELEV = 24;
+function normNome(s){
+  return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/_/g,' ').trim();
+}
+function project(lon,lat,z){
+  const b = GEO.bounds || [[-53.9,-29.4],[-48.3,-25.9]];
+  const u=(lon-b[0][0])/(b[1][0]-b[0][0]);
+  const v=(b[1][1]-lat)/(b[1][1]-b[0][1]);
+  const x=u*470, y=v*430;
+  return [470+(x-y)*0.82, 185+(x+y)*0.44-(z||0)];
+}
+function anel(ring,z){return ring.map(p=>project(p[0],p[1],z));}
+function ptsStr(arr){return arr.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');}
+
+function desenharMapa(rows){
+  const svg=document.getElementById('mapa');
+  if(!svg || !GEO.municipios) return;
+  const por={};
+  rows.forEach(r=>{const k=normNome(r.municipio);if(k&&k!=='na'){(por[k]=por[k]||[]).push(r);}});
+  const b=GEO.bounds||[[-53.9,-29.4],[-48.3,-25.9]];
+  let s='';
+  for(let i=0;i<=10;i++){
+    const lon=b[0][0]+i/10*(b[1][0]-b[0][0]);
+    const lat=b[0][1]+i/10*(b[1][1]-b[0][1]);
+    const a=project(lon,b[0][1],-8),c=project(lon,b[1][1],-8);
+    const d=project(b[0][0],lat,-8),e=project(b[1][0],lat,-8);
+    s+=`<line class="grid-linha" x1="${a[0]}" y1="${a[1]}" x2="${c[0]}" y2="${c[1]}"/>`;
+    s+=`<line class="grid-linha" x1="${d[0]}" y1="${d[1]}" x2="${e[0]}" y2="${e[1]}"/>`;
+  }
+  GEO.municipios.forEach(m=>{
+    const ativos=por[m.norm]||[];
+    const base=anel(m.ring,0);
+    const topo=ativos.length?anel(m.ring,ELEV):base;
+    let lados='';
+    if(ativos.length){
+      for(let i=0;i<base.length-1;i++){
+        lados+=`<polygon class="mun-side" points="${ptsStr([base[i],base[i+1],topo[i+1],topo[i]])}"/>`;
+      }
+    }
+    s+=`<g>${lados}<polygon class="mun${ativos.length?' ativo':''}" points="${ptsStr(base)}"/>`;
+    if(ativos.length) s+=`<polygon class="mun-top" points="${ptsStr(topo)}"/>`;
+    s+='</g>';
+  });
+  let marc='';
+  Object.keys(por).forEach(k=>{
+    const m=GEO.municipios.find(x=>x.norm===k);
+    if(!m) return;
+    const bx=project(m.centro[0],m.centro[1],ELEV)[0];
+    const by=project(m.centro[0],m.centro[1],ELEV)[1];
+    por[k].slice(0,4).forEach((r,i)=>{
+      const ty=by-34-i*28;
+      const cor=r.tag==='VERMELHO'?'#e8343c':r.tag==='AMARELO'?'#f08a24':'#00a86b';
+      marc+=`<g class="marker" onclick="abrirInfo('${esc(r.id)}')">`+
+        `<line x1="${bx}" y1="${by}" x2="${bx}" y2="${ty+6}"/>`+
+        `<polygon points="${bx},${ty-6} ${bx+6},${ty} ${bx},${ty+6} ${bx-6},${ty}"/>`+
+        `<text x="${bx+10}" y="${ty-2}">${esc(r.id)}</text>`+
+        `<text class="tag-label" style="fill:${cor};font-weight:700" x="${bx+10}" y="${ty+11}">[${esc(r.tag)}]</text>`+
+        `</g>`;
+    });
+  });
+  s+=marc;
+  svg.innerHTML=s;
+}
+
+function abrirInfo(id){
+  const r=DADOS.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById('ib-titulo').textContent=r.id+' // '+r.emm;
+  document.getElementById('ib-conteudo').innerHTML=
+    '<div class="linha"><span>Município</span><b>'+esc(r.municipio)+'</b></div>'+
+    '<div class="linha"><span>Data coleta</span><b>'+esc(r.data)+'</b></div>'+
+    '<div class="linha"><span>Sítio</span><b>'+esc(r.sitio)+'</b></div>'+
+    '<div class="linha"><span>Desfecho</span><b>'+esc(r.desfecho)+'</b></div>'+
+    '<div class="linha"><span>QC</span><b>'+esc(r.qc)+'</b></div>'+
+    '<div class="linha"><span>Genes VFDB</span><b>'+r.n_genes+'</b></div>'+
+    '<div class="linha"><span>Alerta</span><b>'+esc(r.tag)+'</b></div>'+
+    '<div class="laudo">'+(r.laudo?esc(r.laudo):'<i>Sem laudo disponível.</i>')+'</div>';
+  document.getElementById('info-box').classList.remove('hidden');
+}
+function fecharInfo(){document.getElementById('info-box').classList.add('hidden');}
+
 function render(){
   const rows=filtrar();
   document.getElementById('k-amostras').textContent=rows.length;
@@ -302,6 +414,7 @@ function render(){
   const cat={};
   rows.forEach(r=>Object.entries(r.categorias).forEach(([k,v])=>cat[k]=(cat[k]||0)+v));
   barras('c-categorias',Object.entries(cat).sort((a,b)=>b[1]-a[1]),'#0090c8');
+  desenharMapa(rows);
   tabela(rows);
 }
 
@@ -330,8 +443,9 @@ window.addEventListener('DOMContentLoaded',()=>{
 """
 
 
-def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov):
+def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov, geo):
     payload = json.dumps(dados, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
+    geo_json = json.dumps(geo, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c") if geo else "{}"
     agora = datetime.now().strftime("%d/%m/%Y %H:%M")
     modelo = ""
     if not any(d["laudo"] for d in dados):
@@ -369,6 +483,14 @@ def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov):
  <div class="panel"><h2><span class="id">03</span> Amostras por município</h2><div id="c-municipio"></div></div>
  <div class="panel"><h2><span class="id">04</span> Categorias funcionais VFDB</h2><div id="c-categorias"></div></div>
 </div>
+<div class="panel"><h2><span class="id">06</span> Mapa tático 3D · amostras por município</h2>
+<div class="mapa-wrap">
+ <div class="mapa-canvas"><svg id="mapa" viewBox="0 0 960 620" role="img" aria-label="Mapa de Santa Catarina com amostras"></svg></div>
+ <aside class="info-box hidden" id="info-box">
+  <button class="fechar" onclick="fecharInfo()">✕ FECHAR</button>
+  <h3 id="ib-titulo">AMOSTRA</h3><div id="ib-conteudo"></div>
+ </aside>
+</div></div>
 <div class="panel"><h2><span class="id">05</span> Amostras · clique para abrir o laudo</h2>
 <table><thead><tr><th>ID</th><th>emm</th><th>Município</th><th>Data</th><th>Sítio</th>
 <th>Desfecho</th><th>Genes</th><th>QC</th><th>Alerta</th></tr></thead>
@@ -377,6 +499,7 @@ def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov):
 classificação de alerta determinística; laudos via Ollama são apoio à interpretação, não diagnóstico.
 Dados clínicos anonimizados.</footer>
 </main>
+<script id="geo" type="application/json">{geo_json}</script>
 <script id="dados" type="application/json">{payload}</script>
 <script>{JS}</script></body></html>
 """
@@ -387,6 +510,7 @@ def main():
     parser.add_argument("--tabela", default="resultados_consolidados/epibuilder_completo.tsv")
     parser.add_argument("--laudos", default="resultados_consolidados/laudos.txt")
     parser.add_argument("--vfdb", default="banco_dados/VFDB_S.pyogenes.fas")
+    parser.add_argument("--geo", default="banco_dados/sc_municipios.json")
     parser.add_argument("--saida", default="resultados_consolidados/dashboard.html")
     parser.add_argument("--min-pident", default="90")
     parser.add_argument("--min-qcov", default="70")
@@ -400,10 +524,13 @@ def main():
         else:
             parser.error(f"tabela não encontrada: {args.tabela}")
     laudos = args.laudos if Path(args.laudos).is_file() else ""
+    geo = {}
+    if Path(args.geo).is_file():
+        geo = json.loads(Path(args.geo).read_text(encoding="utf-8"))
     dados = construir_dados(carregar_tabela(tabela), carregar_laudos(laudos), carregar_vfdb(args.vfdb))
     saida = Path(args.saida)
     saida.parent.mkdir(parents=True, exist_ok=True)
-    saida.write_text(gerar_html(dados, tabela, laudos, args.min_pident, args.min_qcov), encoding="utf-8")
+    saida.write_text(gerar_html(dados, tabela, laudos, args.min_pident, args.min_qcov, geo), encoding="utf-8")
     print(f"Dashboard gerado: {saida}")
     print(f"Amostras: {len(dados)} | com laudo: {sum(1 for d in dados if d['laudo'])}")
 

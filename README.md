@@ -154,6 +154,7 @@ em biologia, com referências em ABNT, relevância para o TCC e ordem de leitura
 | `scripts/juntar_metadados.py` | Junta QC e metadados clínico-epidemiológicos por `ID_Amostra`. |
 | `scripts/relatorio_lote.py` | Gera o relatório Markdown resumido do lote. |
 | `scripts/relatorio_html.py` | Gera o dashboard HTML autocontido (visualização offline). |
+| `scripts/preparar_mapa.py` | Prepara o vetor simplificado de SC usado no mapa 3D (execução única). |
 | `scripts/prepara_epibuilder.py` | Parsers de emm/VFDB e geração individual da tabela. |
 | `scripts/vigilancia_bot.py` | Gera os laudos via Ollama para as amostras de *S. pyogenes*. |
 | `scripts/rag_vigilancia.py` | Constrói o dicionário de genes do VFDB (diagnóstico). |
@@ -166,7 +167,8 @@ teste_emmtyper/
 ├── entrada/                     # assemblies .fna
 ├── banco_dados/
 │   ├── VFDB_S.pyogenes.fas
-│   └── vfdb_pyogenes_index.*    # índice BLAST do VFDB
+│   ├── vfdb_pyogenes_index.*    # índice BLAST do VFDB
+│   └── sc_municipios.json       # vetor simplificado de SC (mapa 3D)
 ├── docs/                        # painel de validação, arquitetura e metadados de exemplo
 ├── scripts/
 ├── resultados_blast/            # logs do emmtyper e BLAST bruto
@@ -200,6 +202,9 @@ dependências, e pode ser aberto no navegador ou anexado a um e-mail.
 O painel mostra:
 
 - cartões com total de amostras, tipos *emm*, alertas vermelhos e QC aprovado;
+- **mapa tático 3D** (projeção isométrica, estilo iDroid) dos municípios de SC:
+  polígonos com extrusão, marcadores com o ID da amostra e o alerta ao lado, e
+  uma caixa clicável com os dados completos da amostra;
 - gráficos de distribuição de *emm*, evolução mensal, municípios e categorias
   funcionais do VFDB;
 - tabela filtrável (busca livre, *emm*, município e alerta) com exportação TSV;
@@ -210,6 +215,15 @@ Para atualizar apenas o painel sem reprocessar os genomas:
 ```bash
 source config.sh
 "$CONDA_PREFIX/bin/python" scripts/relatorio_html.py
+```
+
+O mapa usa `banco_dados/sc_municipios.json` (293 municípios simplificados),
+gerado uma única vez a partir do GeoJSON público do projeto
+[tbrugz/geodata-br](https://github.com/tbrugz/geodata-br). Para atualizar o
+vetor, baixe `geojs-42-mun.json` e rode:
+
+```bash
+python3 scripts/preparar_mapa.py /caminho/geojs-42-mun.json
 ```
 
 Escolha de design: o HTML é o formato de baixa fricção para o TCC e as primeiras
