@@ -25,8 +25,10 @@ resultados_consolidados/epibuilder_completo.tsv
 ```
 
 A montagem e a anotação (Dorado → Flye → Medaka → QUAST/NanoPlot → Prokka) ocorrem
-**a montante** deste repositório. A visão completa do fluxo de vigilância está em
-[`docs/arquitetura_vigilancia.md`](docs/arquitetura_vigilancia.md).
+**a montante** deste repositório. **O Dorado não está instalado neste servidor** —
+ele é documentado na página `pipeline.html` conforme a metodologia do TCC, mas os
+assemblies validados aqui vieram do NCBI RefSeq. A visão completa do fluxo de
+vigilância está em [`docs/arquitetura_vigilancia.md`](docs/arquitetura_vigilancia.md).
 
 ## Requisitos
 

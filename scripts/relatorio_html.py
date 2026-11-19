@@ -790,7 +790,14 @@ def gerar_html_pipeline(logo, dashboard_url, pipeline_url):
  <div class="etapa"><b>13 RELATÓRIO</b><span>relatorio_lote.py → relatorio_lote.md</span></div><div class="seta">▸</div>
  <div class="etapa"><b>14 DASHBOARD</b><span>relatorio_html.py → dashboard.html (mapa 3D + gráficos + laudos)</span></div>
 </div>
-<p class="nota">A montagem/anotação (etapas 01–06) ocorre no laboratório de bioinformática; este repositório começa no assembly FASTA depositado em <code>entrada/</code>.</p>
+<p class="nota"><b>Importante:</b> as etapas 01–06 (<b>Dorado</b>, Flye, Medaka, QUAST/NanoPlot,
+Prokka) são <b>a montante</b> e <b>não são executadas por este repositório</b>.
+Neste servidor, o Dorado <b>não está instalado</b> (verificado em 19/11/2026: ausente no PATH
+e sem imagem Docker); os comandos abaixo são a documentação do fluxo descrito no TCC,
+para serem executados no laboratório de sequenciamento/bioinformática. Existem dados FAST5
+antigos em <code>/resultados/Analises_Paulo/fast5_pass</code> (barcode01–05, jun/2025),
+mas eles <b>não</b> foram usados nesta validação — os 30 assemblies vieram do NCBI RefSeq.
+Este repositório começa no assembly FASTA depositado em <code>entrada/</code>.</p>
 </div>
 
 <div class="panel"><h2><span class="id">01</span> Pré-requisitos do ambiente</h2>
@@ -888,7 +895,7 @@ docker run --rm --sysctl net.ipv6.conf.all.disable_ipv6=1 \\
 <div class="panel"><h2><span class="id">09</span> Saídas e reprodutibilidade</h2>
 <table class="docs-tabela"><thead><tr><th>Arquivo</th><th>Conteúdo</th></tr></thead><tbody>
 <tr><td><code>qc_montagem.tsv</code></td><td>métricas de qualidade por assembly</td></tr>
-<tr><td><code>&lt;ID&gt;_emm.stdout.log</code></td><td>saída bruta do emmtyper (tipo emm)</td></tr>
+<tr><td><code>&lt;ID&gt;_emm.stdout.log</code> + <code>&lt;ID&gt;.blast.raw.tsv</code></td><td>tipo emm e alinhamento BLAST bruto preservado</td></tr>
 <tr><td><code>&lt;ID&gt;_vfdb.tsv</code></td><td>hits tabulares do blastn contra VFDB</td></tr>
 <tr><td><code>epibuilder_metadata.tsv</code></td><td>tabela genômica consolidada (ID, emm, virulência)</td></tr>
 <tr><td><code>epibuilder_completo.tsv</code></td><td>tabela + QC + metadados clínicos/epidemiológicos</td></tr>
@@ -904,6 +911,115 @@ sha256sum banco_dados/VFDB_S.pyogenes.fas > resultados/vfdb.sha256
 date -Is > resultados/data_execucao.txt
 ''')}
 <p class="nota">Validação atual: 30 assemblies RefSeq de S. pyogenes (taxon 1314), 18 tipos emm, 30/30 processadas, 0 falhas, 0 não-alvo. Metadados clínicos de exemplo são sintéticos.</p>
+</div>
+
+<div class="panel"><h2><span class="id">11</span> Etapas a montante em detalhe — NÃO executadas neste repositório</h2>
+<table class="docs-tabela"><thead><tr><th>Ferramenta</th><th>Função</th><th>Entrada → saída</th><th>Status aqui</th></tr></thead><tbody>
+<tr><td><b>Dorado</b></td><td>basecalling Nanopore + demultiplexação</td><td>POD5/FAST5 → BAM/FASTQ</td><td>❌ não instalado; documentado conforme metodologia do TCC</td></tr>
+<tr><td><b>Flye</b></td><td>montagem de novo (leituras longas)</td><td>FASTQ → assembly.fasta</td><td>⚠️ a montante, fora do repo</td></tr>
+<tr><td><b>Medaka</b></td><td>polishing da montagem</td><td>assembly + reads → consensus.fasta</td><td>⚠️ a montante, fora do repo</td></tr>
+<tr><td><b>QUAST / NanoPlot</b></td><td>métricas de qualidade</td><td>FASTA/FASTQ → relatórios</td><td>⚠️ a montante (o QC deste repo é próprio)</td></tr>
+<tr><td><b>Prokka</b></td><td>anotação gênica</td><td>consensus.fasta → GFF/GBK/FAA/FNA</td><td>⚠️ a montante, fora do repo</td></tr>
+</tbody></table>
+{cmd('', '''
+# 1) instalar e baixar o modelo Dorado (R10.4.1, precisão "sup")
+micromamba install -c bioconda -c conda-forge dorado samtools
+dorado download --model dna_r10.4.1_e8.2_400bps_sup@v5.0.0
+
+# 2) converter FAST5 antigo em POD5 (se necessário)
+pod5 convert fast5 /resultados/Analises_Paulo/fast5_pass/ --output /caminho/pod5/
+
+# 3) basecalling (GPU) e demultiplexação (kit Rapid Barcoding SQK-RBK114.24)
+dorado basecaller --device cuda:0 \\
+  dna_r10.4.1_e8.2_400bps_sup@v5.0.0 /caminho/pod5/ > calls.bam
+dorado demux --output-dir /caminho/demux \\
+  --kit-name SQK-RBK114-24 calls.bam
+
+# 4) FASTQ por barcode → entra em Flye
+samtools fastq -T '*' /caminho/demux/barcode01.fastq.gz > barcode01.fastq
+''')}
+<p class="nota">Os comandos acima são <b>modelo</b>: o nome do modelo, o kit e o diretório devem ser ajustados ao run real. O Dorado <b>não</b> participou dos 30 assemblies desta validação — eles foram baixados prontos do NCBI RefSeq.</p>
+{cmd('', '''
+# Montagem, polishing e anotação (exemplo para um barcode)
+flye --nano-hq barcode01.fastq --out-dir flye_barcode01 \\
+  --threads 16 --genome-size 1.9m
+medaka_consensus -i barcode01.fastq -d flye_barcode01/assembly.fasta \\
+  -o medaka_barcode01 -m r10_min_high_accuracy -t 16
+quast.py medaka_barcode01/consensus.fasta -o quast_barcode01
+NanoPlot --fastq barcode01.fastq -o nanoplot_barcode01
+prokka medaka_barcode01/consensus.fasta --outdir prokka_barcode01 \\
+  --prefix AMOSTRA_01
+
+# O FASTA final (consensus.fasta / .fna) é o que entra em entrada/
+''')}
+</div>
+
+<div class="panel"><h2><span class="id">13</span> Pipeline ATUAL em produção — etapas executadas aqui</h2>
+<p class="nota">Esta é a sequência que efetivamente roda hoje, validada em 30 assemblies (30/30 processadas, 0 falhas, 18 tipos emm). Os comandos abaixo são os mesmos do <code>pipeline_principal.sh</code>.</p>
+<table class="docs-tabela"><thead><tr><th>Etapa</th><th>Comando / ferramenta</th><th>Parâmetros e regras</th><th>Produto</th></tr></thead><tbody>
+<tr><td>QC de montagem</td><td><code>scripts/qc_montagem.py</code></td><td>1,5–2,5 Mb · ≤500 contigs · GC 35–42% · Ns ≤1%</td><td><code>qc_montagem.tsv</code></td></tr>
+<tr><td>Tipagem emm</td><td><code>emmtyper --workflow blast</code> v0.2.0</td><td>banco interno <code>emm.fna</code>; <code>--keep</code> preserva o BLAST bruto</td><td><code>&lt;ID&gt;_emm.stdout.log</code> + <code>.blast.raw.tsv</code></td></tr>
+<tr><td>Virulência</td><td><code>blastn</code> × VFDB</td><td>outfmt <code>6 qseqid sseqid pident length slen qcovhsp</code>; <code>-max_target_seqs 5000</code>; pident ≥ 90%; cobertura do gene <code>length/slen</code> ≥ 70%</td><td><code>&lt;ID&gt;_vfdb.tsv</code></td></tr>
+<tr><td>Consolidação</td><td><code>scripts/consolidar_lote.py</code></td><td>parse real de emm + VFDB (sem dados simulados); exclui não-alvo</td><td><code>epibuilder_metadata.tsv</code></td></tr>
+<tr><td>Metadados</td><td><code>scripts/juntar_metadados.py</code></td><td>join por <code>ID_Amostra</code>; amostras sem metadata recebem <code>NA</code></td><td><code>epibuilder_completo.tsv</code></td></tr>
+<tr><td>Laudos</td><td><code>scripts/vigilancia_bot.py</code> + Ollama</td><td><code>llama3:8b</code>, temperatura 0; alerta determinístico em Python; vermelho = toxina superantigênica (speA/C/D/G/H/I/J/K/L/M/ssa/smeZ), amarelo = evasão/adesão, padrão = basal</td><td><code>laudos.txt</code></td></tr>
+<tr><td>Relatório</td><td><code>scripts/relatorio_lote.py</code></td><td>agregações por emm, VFDB, alerta, mês, município, sítio e desfecho</td><td><code>relatorio_lote.md</code></td></tr>
+<tr><td>Páginas HTML</td><td><code>scripts/relatorio_html.py</code></td><td>dashboard com mapa 3D + página de comandos; vetores e CSS/JS embutidos</td><td><code>dashboard.html</code> + <code>pipeline.html</code></td></tr>
+</tbody></table>
+{cmd('', '''
+cd ~/teste_emmtyper && source config.sh
+PY="$CONDA_PREFIX/bin/python"
+
+# 1) QC de montagem (todas as amostras de entrada/*.fna)
+"$PY" scripts/qc_montagem.py --saida resultados_consolidados/qc_montagem.tsv entrada/*.fna
+
+# 2) Tipagem emm — por amostra, dentro de resultados_blast/.work/<ID>/
+emmtyper --workflow blast --blast_db "$EMMTYPER_DB" --keep \\
+  --output "resultados_blast/${ID}_emm.stdout.log" "$GENOMA_ABS"
+
+# 3) Virulência VFDB — por amostra
+blastn -query "$GENOMA_ABS" -db "$VFDB_DB" \\
+  -outfmt "6 qseqid sseqid pident length slen qcovhsp" \\
+  -max_target_seqs 5000 \\
+  -out "resultados_consolidados/${ID}_vfdb.tsv"
+
+# 4) PCR in silico (opcional — ativado por --pcr)
+emmtyper --workflow pcr --blast_db "$EMMTYPER_DB" \\
+  --primer-db "$PRIMER_DB" --ispcr-path "$ISPCR_PATH" --keep \\
+  --output "resultados_pcr/${ID}_pcr.stdout.log" "$GENOMA_ABS"
+
+# 5) Consolidação (resultados reais, sem simulação)
+"$PY" scripts/consolidar_lote.py --entrada-dir entrada \\
+  --resultados-blast resultados_blast \\
+  --resultados-vfdb resultados_consolidados \\
+  --saida resultados_consolidados/epibuilder_metadata.tsv \\
+  --min-pident "$VFDB_MIN_PIDENT" --min-qcov "$VFDB_MIN_QCOV"
+
+# 6) Junção com metadados clínicos (quando --metadados é usado)
+"$PY" scripts/juntar_metadados.py \\
+  --genomico resultados_consolidados/epibuilder_metadata.tsv \\
+  --metadados docs/metadados_exemplo.tsv \\
+  --qc resultados_consolidados/qc_montagem.tsv \\
+  --saida resultados_consolidados/epibuilder_completo.tsv
+
+# 7) Laudos (quando --sem-laudos NÃO é usado)
+"$PY" scripts/vigilancia_bot.py 2>&1 | tee resultados_consolidados/laudos.txt
+
+# 8) Relatório do lote
+"$PY" scripts/relatorio_lote.py \\
+  --tabela resultados_consolidados/epibuilder_completo.tsv \\
+  --laudos resultados_consolidados/laudos.txt \\
+  --vfdb banco_dados/VFDB_S.pyogenes.fas \\
+  --saida resultados_consolidados/relatorio_lote.md
+
+# 9) As duas páginas HTML (geradas juntas)
+"$PY" scripts/relatorio_html.py \\
+  --tabela resultados_consolidados/epibuilder_completo.tsv \\
+  --laudos resultados_consolidados/laudos.txt \\
+  --vfdb banco_dados/VFDB_S.pyogenes.fas \\
+  --saida resultados_consolidados/dashboard.html \\
+  --min-pident "$VFDB_MIN_PIDENT" --min-qcov "$VFDB_MIN_QCOV"
+''')}
 </div>
 <footer>CIGenS/SC · UFSC · LACEN/SC · DIVE/SC · emmtyper 0.2.0 (BLAST) · VFDB S. pyogenes ·
 laudos via Ollama llama3:8b são apoio à interpretação, não diagnóstico.</footer>
