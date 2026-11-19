@@ -703,6 +703,11 @@ PIPELINE_CSS = """
 .nav-btn{position:absolute;right:150px;top:20px;border:1px solid var(--cyan);color:var(--cyan);
 padding:7px 11px;font:10px var(--mono);letter-spacing:1.2px;text-decoration:none;background:#fff}
 .nav-btn:hover{background:#e9f7ff;box-shadow:0 0 10px rgba(0,184,230,.25)}
+.logo-bloco{display:flex;flex-direction:column;align-items:center;gap:7px;flex:none;min-width:96px}
+.logo-bloco .nav-btn{position:static;display:inline-block;white-space:nowrap;text-align:center;
+font:9px/1.2 var(--mono);letter-spacing:.9px;padding:5px 7px;color:var(--blue);
+background:#f0faff;border:1px solid var(--cyan);box-shadow:0 0 8px rgba(0,184,230,.18)}
+.logo-bloco .nav-btn:hover{background:#dff3ff;color:#073d6b;box-shadow:0 0 12px rgba(0,184,230,.4)}
 .nav-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .nav-bar a{font:11px var(--mono);letter-spacing:1.4px;color:var(--blue);text-decoration:none;
 border:1px solid var(--line);padding:8px 12px;background:#fff}
@@ -990,12 +995,14 @@ def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov, 
 <style>{CSS}</style></head><body>
 <div class="scan"></div>
 <header><div class="cabecalho-conteudo">
+<div class="logo-bloco">
 <div class="logo-ufsc" title="Universidade Federal de Santa Catarina">{logo}</div>
+<a class="nav-btn" href="{html.escape(pipeline_url)}">📖 PIPELINE</a>
+</div>
 <div><div class="overline">CIGenS // Módulo de vigilância genômica · SYS.01</div>
 <h1>VIGILÂNCIA DE <i>STREPTOCOCCUS PYOGENES</i></h1>
 <p>PAINEL DE LEITURA EPIDEMIOLÓGICA · GERADO EM {agora} · FONTE: {html.escape(Path(caminho_tabela).name).upper()}{modelo.upper()}</p></div>
-</div><div class="status"><b></b>SISTEMA ONLINE</div>
-<a class="nav-btn" href="{html.escape(pipeline_url)}">📖 PIPELINE</a><div class="hud-line"></div></header>
+</div><div class="status"><b></b>SISTEMA ONLINE</div><div class="hud-line"></div></header>
 <main>
 <div class="cards">
  <div class="card"><div class="num" id="k-amostras">0</div><div class="lbl">Amostras no lote</div></div>
