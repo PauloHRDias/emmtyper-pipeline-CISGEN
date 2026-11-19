@@ -34,7 +34,7 @@ SUMÁRIO
 
 5 CRONOGRAMA .................................................................................. 18
 
-6 RESULTADOS ESPERADOS .............................................................. 19
+6 RESULTADOS OBTIDOS E ESPERADOS ........................................... 19
 
 7 RISCOS E DIFICULDADES ............................................................... 20
 
@@ -83,22 +83,29 @@ Este é um estudo experimental, desenvolvido a partir de dados genômicos de iso
 Obtenção e sequenciamento dos isolados
 Os isolados de EGA incluídos no estudo serão obtidos a partir de casos suspeitos de infecções invasivas identificados pelos Núcleos Hospitalares de Epidemiologia (NHE) do Estado de Santa Catarina, conforme os critérios estabelecidos pela Nota Técnica Conjunta nº 08/2024. Após coleta, isolamento e caracterização pelos laboratórios locais, até 200 amostras clínicas de sítios estéreis do corpo, serão encaminhadas ao Laboratório Central de Saúde Pública de Santa Catarina (LACEN/SC) para confirmação diagnóstica e, posteriormente, enviadas de forma anonimizada ao Centro de Inovação em Genômica e Saúde (CIGenS) para extração de DNA e tipagem molecular por meio de sequenciamento genético.
 A extração do DNA genômico será realizada utilizando kits comerciais baseados em colunas de sílica e/ou beads magnéticos. A quantificação do DNA será realizada utilizando o kit Qubit dsDNA High Sensitivity (Thermo Fisher Scientific). O preparo das bibliotecas será realizado utilizando o kit Rapid Barcoding (SQK-RBK114.24), seguido de sequenciamento na plataforma Oxford Nanopore Technologies MinION, empregando Flow Cells R10.4.1, conforme protocolo do fabricante. Os resultados gerados serão enviados para o laboratório de bioinformática da UFSC, para realização das análises em softwares de bioinformática. Serão enviados também os dados clínicos e epidemiológicos para correlação com os isolados.
-Montagem e caracterização dos genomas 
-Os dados brutos gerados pelo sequenciamento serão processados conforme metodologia descrita por Cipriani et al. (2025). Inicialmente, as leituras obtidas pela plataforma Oxford Nanopore serão submetidas ao processo de basecalling e controle de qualidade utilizando o software Dorado, responsável pela conversão dos sinais elétricos gerados durante o sequenciamento em sequências de nucleotídeos. Após o pré-processamento, será realizada a montagem de novo dos genomas utilizando o software Flye, seguida de etapas de refinamento (polishing) com a ferramenta Medaka. A qualidade das montagens será avaliada por meio dos softwares QUAST e NanoPlot, que permitirão verificar métricas relacionadas à completude e qualidade dos genomas obtidos. 
-Na sequência os genomas montados serão submetidos a anotação pelo pipeline Prokka (SEEMANN, 2014), gerando o conjunto de genes, CDS e proteínas preditas, bem como a caracterização de elementos não codificantes presentes no genoma. Além disso, os genomas montados serão utilizados para a identificação de fatores de virulência com o programa VFDB (Virulence Factor Database), que reúne genes curados associados a mecanismos de patogenicidade bacteriana (ZHOU et al., 2025; DONG et al., 2024).
-Utilizando uma ferramenta de tipagem (typing tool), será realizada a tipagem in silico do gene emm dos isolados de Streptococcus pyogenes, a partir dos genomas montados e anotados. A análise será executada com base na documentação da ferramenta emmtyper, desenvolvida para identificação automática do tipo emm em assemblies genômicos de S. pyogenes (EMMTYPER, 2021; FROST et al., 2020), por meio da comparação das sequências obtidas com bases de referência específicas para a região emm. Essa abordagem permitirá a determinação do tipo emm presente em cada isolado, incluindo a identificação de subtipos, quando aplicável, contribuindo para a padronização da tipagem molecular e para a caracterização genotípica das amostras analisadas.
+Pipeline de análise genômica implementada
+A etapa computacional desenvolvida neste trabalho opera a partir de assemblies genômicos já montados, em formato FASTA. O basecalling, a montagem de novo, o polishing e a anotação (Dorado, Flye, Medaka, QUAST/NanoPlot e Prokka) são etapas realizadas a montante, no laboratório de sequenciamento/bioinformática, e não foram executadas no ambiente desta validação. Assim, o fluxo funcional descrito a seguir tem início nos arquivos FASTA depositados no diretório de entrada da pipeline.
+
+A pipeline foi implementada em Bash e Python e executa, para cada assembly: (i) controle de qualidade básico da montagem, com número de contigs, comprimento total, N50, conteúdo GC e proporção de bases ambíguas; (ii) tipagem in silico do gene emm com o emmtyper 0.2.0 (EMMTYPER, 2021; FROST et al., 2020), no workflow baseado em BLAST contra o banco interno emm.fna, preservando o alinhamento bruto e permitindo, de forma opcional, a confirmação por PCR in silico; e (iii) pesquisa de fatores de virulência por blastn contra o VFDB filtrado para S. pyogenes (ZHOU et al., 2025; DONG et al., 2024), com limiares mínimos de identidade (90%) e cobertura do gene (70%). A tipagem emm constitui um dos principais marcadores moleculares na caracterização de S. pyogenes, em razão da variabilidade do gene que codifica a proteína M, associada à diversidade genética e à circulação de linhagens.
+
+Os resultados de tipagem e virulência são consolidados em uma tabela única por amostra, sem valores simulados, à qual podem ser acrescentados metadados clínicos e epidemiológicos anonimizados. A etapa final gera um relatório resumido do lote e páginas HTML autocontidas para visualização, incluindo gráficos de distribuição de emm, perfil de virulência, alertas e um mapa vetorial tridimensional das amostras por município. A classificação de alerta é determinística, calculada em Python a partir dos genes detectados; o modelo de linguagem local (Ollama, llama3:8b, temperatura 0) atua apenas na redação da narrativa dos laudos, que são apoio à interpretação e não diagnóstico.
 A tipagem emm constitui um dos principais marcadores moleculares utilizados na caracterização de S. pyogenes, em razão da elevada variabilidade do gene que codifica a proteína M, associada à diversidade genética, à circulação de linhagens e à relação com diferentes manifestações clínicas. Assim, a aplicação da ferramenta permitirá comparar os resultados obtidos com dados de vigilância molecular descritos na literatura, possibilitando a interpretação epidemiológica dos isolados e o reconhecimento de perfis genéticos de interesse.
-Adicionalmente, os genomas serão submetidos à pesquisa de fatores de virulência com auxílio da Virulence Factor Database (VFDB), na seção correspondente ao gênero Streptococcus (ZHOU et al., 2025; DONG et al., 2024). Essa base de dados reúne genes previamente descritos e curados associados a mecanismos de patogenicidade bacteriana, como adesão, invasão tecidual, evasão imune e produção de toxinas. A utilização dessa base permitirá a identificação e a classificação dos fatores de virulência presentes nos isolados analisados, fornecendo subsídios para a caracterização funcional dos genomas e para a avaliação do potencial patogênico das amostras estudadas.
+Adicionalmente, os genomas são submetidos à pesquisa de fatores de virulência com auxílio da Virulence Factor Database (VFDB), na seção correspondente ao gênero Streptococcus (ZHOU et al., 2025; DONG et al., 2024). Essa base de dados reúne genes previamente descritos e curados associados a mecanismos de patogenicidade bacteriana, como adesão, invasão tecidual, evasão imune e produção de toxinas. A utilização dessa base permitirá a identificação e a classificação dos fatores de virulência presentes nos isolados analisados, fornecendo subsídios para a caracterização funcional dos genomas e para a avaliação do potencial patogênico das amostras estudadas.
 
 4.1 Etapas da pipeline
 
-**Quadro 1 – Pipeline alinhada à metodologia**
+**Quadro 1 – Etapas implementadas na pipeline funcional**
 
 | ETAPA | PERGUNTA RESPONDIDA | FERRAMENTA | BASE REFERENCIAL | PRODUTO |
 |---|---|---|---|---|
-| Tipagem emm | Qual é o tipo/subtipo emm do isolado? | emmtyper 0.2.0 | Banco interno emm.fna | Tipo emm, resultado de BLAST e/ou PCR in silico |
-| Pesquisa de virulência | Quais genes de virulência conhecidos estão presentes? | blastn diretamente ou ferramenta dedicada | VFDB, filtrado para *S. pyogenes* | Hits por gene, identidade, cobertura e classificação funcional |
-| Consolidação | Qual é o perfil genotípico de cada isolado? | Script em bash/Python | Resultados das duas etapas | Tabela final por amostra |
+| QC da montagem | A montagem tem qualidade para análise? | `qc_montagem.py` | Faixas esperadas para *S. pyogenes* | `qc_montagem.tsv` |
+| Tipagem emm | Qual é o tipo/subtipo emm do isolado? | emmtyper 0.2.0 (BLAST) | Banco interno `emm.fna` | Tipo emm, BLAST bruto e PCR in silico opcional |
+| Pesquisa de virulência | Quais genes de virulência conhecidos estão presentes? | `blastn` | VFDB filtrado para *S. pyogenes* | Hits por gene, identidade, cobertura e classificação funcional |
+| Consolidação | Qual é o perfil genotípico de cada isolado? | `consolidar_lote.py` | Resultados das duas etapas anteriores | `epibuilder_metadata.tsv` |
+| Metadados | Como integrar dados clínicos e epidemiológicos? | `juntar_metadados.py` | Tabela genômica + TSV anonimizado + QC | `epibuilder_completo.tsv` |
+| Laudos | Qual a interpretação epidemiológica do perfil? | `vigilancia_bot.py` + Ollama (`llama3:8b`) | Genes VFDB e regras determinísticas de alerta | `laudos.txt` |
+| Relatório | Qual o resumo agregado do lote? | `relatorio_lote.py` | Tabela final e laudos | `relatorio_lote.md` |
+| Visualização | Como comunicar os resultados? | `relatorio_html.py` | Tabelas, laudos e vetores geográficos | `dashboard.html` e `pipeline.html` |
 
 Fonte: elaborado pelo autor (2026).
 
@@ -117,9 +124,17 @@ Fonte: elaborado pelo autor (2026).
 
 Fonte: elaborado pelo autor (2026).
 
-6 RESULTADOS ESPERADOS
+6 RESULTADOS OBTIDOS E ESPERADOS
 
-Deve apresentar de forma concreta o que se espera alcançar. Verificar quais os impactos prováveis do projeto: científico, ambiental, econômico e/ou social. 
+6.1 Validação da pipeline
+
+Para validar o fluxo antes do recebimento dos isolados clínicos, foram utilizados 30 assemblies genômicos públicos de *Streptococcus pyogenes*, obtidos da NCBI Datasets API pelo taxon 1314, restritos a acessos RefSeq (GCF), nível de montagem Complete Genome e sem duplicatas. Os metadados clínicos e epidemiológicos associados são fictícios, empregados apenas para exercitar a integração e a visualização; nenhuma amostra real do LACEN/SC foi processada nesta etapa.
+
+A execução completa da pipeline resultou em 30/30 amostras processadas, nenhuma falha de tipagem ou de busca de virulência e nenhuma amostra classificada como não-alvo. Foram identificados 18 tipos emm distintos, com destaque para EMM77.0 (sete amostras) e EMM1.0 (cinco amostras). O número de genes de virulência detectados por amostra variou de 180 a 229, e o controle de qualidade aprovou 30/30 montagens. Ao final, foram gerados 30 laudos epidemiológicos e um relatório consolidado com distribuição de emm, categorias funcionais do VFDB e agregações por data, município, sítio anatômico e desfecho. As páginas HTML resultantes permitem explorar os dados em gráficos, tabela filtrável e mapa vetorial tridimensional, com navegação entre a visão do Brasil e a visão municipal.
+
+6.2 Impactos esperados
+
+Espera-se, com a chegada das amostras reais, que a pipeline padronize a geração de informações genotípicas e de perfil de virulência, reduza o tempo entre o sequenciamento e a interpretação epidemiológica e forneça subsídios para a vigilância de infecções invasivas por *S. pyogenes* em Santa Catarina. A consolidação dos dados em tabelas estruturadas e painéis de visualização facilita a integração com sistemas de informação em saúde e a identificação precoce de linhagens de interesse. Cientificamente, o trabalho amplia o conhecimento sobre a diversidade genética regional do patógeno; institucionalmente, fortalece a capacidade de resposta do Laboratório de Bioinformática da UFSC em parceria com o LACEN/SC e a DIVE/SC. 
 
 7 RISCOS E DIFICULDADES
 

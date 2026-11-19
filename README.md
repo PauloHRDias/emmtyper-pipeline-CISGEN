@@ -24,11 +24,10 @@ resultados_consolidados/epibuilder_completo.tsv
    └── dashboard HTML ─────────────────► dashboard.html
 ```
 
-A montagem e a anotação (Dorado → Flye → Medaka → QUAST/NanoPlot → Prokka) ocorrem
-**a montante** deste repositório. **O Dorado não está instalado neste servidor** —
-ele é documentado na página `pipeline.html` conforme a metodologia do TCC, mas os
-assemblies validados aqui vieram do NCBI RefSeq. A visão completa do fluxo de
-vigilância está em [`docs/arquitetura_vigilancia.md`](docs/arquitetura_vigilancia.md).
+O fluxo **em uso** começa nos assemblies FASTA de `entrada/` — os 30 genomas
+desta validação foram obtidos do NCBI RefSeq (API Datasets, taxon 1314, RefSeq/GCF,
+Complete Genome, sem duplicatas). Todo o processamento a partir daí é executado
+neste repositório e documentado na página `pipeline.html`.
 
 ## Requisitos
 

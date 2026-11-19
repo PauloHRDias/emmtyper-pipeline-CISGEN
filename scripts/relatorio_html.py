@@ -746,249 +746,119 @@ function fallback(txt,ok){
 
 
 def gerar_html_pipeline(logo, dashboard_url, pipeline_url):
-    """Segunda página: fluxo analítico e comandos operacionais, no mesmo estilo HUD."""
+    """Página 02: pipeline operacional real do projeto e seus comandos."""
     agora = datetime.now().strftime("%d/%m/%Y %H:%M")
+
     def cmd(titulo, texto):
-        return (f'<h2><span class="id">{titulo}</span></h2>'
-                f'<div class="cmd"><button class="copiar" onclick="copiar(this)">COPIAR</button>'
+        cab = f'<h2><span class="id">{titulo}</span></h2>' if titulo else ""
+        return (cab + '<div class="cmd"><button class="copiar" onclick="copiar(this)">COPIAR</button>'
                 f'<pre><code>{html.escape(texto.strip())}</code></pre></div>')
+
     return f"""<!doctype html>
 <html lang="pt-br"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CIGenS/SC — Pipeline analítica</title>
+<title>CIGenS/SC — Pipeline operacional</title>
 <style>{CSS}{PIPELINE_CSS}</style></head><body>
 <div class="scan"></div>
 <header><div class="cabecalho-conteudo">
 <div class="logo-ufsc" title="Universidade Federal de Santa Catarina">{logo}</div>
-<div><div class="overline">CIGenS // Documentação operacional · SYS.02</div>
-<h1>PIPELINE <i>ANALÍTICA COMPLETA</i></h1>
-<p>FLUXO DE PROCESSAMENTO E COMANDOS DE EXECUÇÃO · ATUALIZADO EM {agora}</p></div>
+<div><div class="overline">CIGenS // Operação e reprodução · SYS.02</div>
+<h1>PIPELINE <i>OPERACIONAL</i></h1>
+<p>FLUXO EM USO NESTE PROJETO · COMANDOS VALIDADOS · ATUALIZADO EM {agora}</p></div>
 </div><div class="status"><b></b>SISTEMA ONLINE</div>
 <a class="nav-btn" href="{html.escape(dashboard_url)}">← DASHBOARD</a><div class="hud-line"></div></header>
 <main>
 <div class="nav-bar"><a href="{html.escape(dashboard_url)}">← VOLTAR AO DASHBOARD DE RESULTADOS</a>
 <span class="lbl">PÁGINA 02 / 02 · OPERAÇÃO E REPRODUÇÃO</span></div>
 
-<div class="panel"><h2><span class="id">00</span> Fluxo analítico completo</h2>
-<div class="grupo-titulo">A montante · sequenciamento → assembly (fora do repositório)</div>
+<div class="panel"><h2><span class="id">00</span> Fluxo operacional em uso</h2>
+<p class="nota">O projeto trabalha a partir de <b>assemblies genômicos em FASTA</b> (<code>entrada/*.fna</code>).
+Tudo abaixo é executado aqui, neste servidor, e foi validado com 30 amostras.</p>
 <div class="fluxo">
- <div class="etapa"><b>01 CORTE / DNA</b><span>Nanopore MinION · Rapid Barcoding SQK-RBK114.24 · cells R10.4.1</span></div><div class="seta">▸</div>
- <div class="etapa"><b>02 DORADO</b><span>basecalling e controle de qualidade das leituras</span></div><div class="seta">▸</div>
- <div class="etapa"><b>03 FLYE</b><span>montagem de novo do genoma</span></div><div class="seta">▸</div>
- <div class="etapa"><b>04 MEDAKA</b><span>polishing da montagem</span></div><div class="seta">▸</div>
- <div class="etapa"><b>05 QUAST / NANOPLOT</b><span>N50, GC, cobertura e métricas de qualidade</span></div><div class="seta">▸</div>
- <div class="etapa"><b>06 PROKKA</b><span>anotação gênica (CDS, proteínas, elementos não codificantes)</span></div>
+ <div class="etapa"><b>01 INSUMOS</b><span>30 assemblies em <code>entrada/</code>, banco <code>emm.fna</code>, índice VFDB</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>02 AMBIENTE</b><span>micromamba <code>emmtyper</code> + <code>config.sh</code> (PATH, DBs, limites)</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>03 QC</b><span><code>qc_montagem.py</code> → <code>qc_montagem.tsv</code></span></div><div class="seta">▸</div>
+ <div class="etapa"><b>04 EMMTYPER</b><span>workflow BLAST → tipo emm + BLAST bruto</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>05 VFDB</b><span><code>blastn</code> × VFDB → genes de virulência</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>06 CONSOLIDAÇÃO</b><span><code>consolidar_lote.py</code> → tabela genômica</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>07 METADADOS</b><span><code>juntar_metadados.py</code> → tabela completa</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>08 LAUDOS</b><span><code>vigilancia_bot.py</code> + Ollama <code>llama3:8b</code></span></div><div class="seta">▸</div>
+ <div class="etapa"><b>09 RELATÓRIO</b><span><code>relatorio_lote.py</code> → resumo do lote</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>10 PÁGINAS</b><span><code>relatorio_html.py</code> → dashboard.html + pipeline.html</span></div>
 </div>
-<div class="grupo-titulo">Núcleo do repositório · assembly → resultado publicável</div>
-<div class="fluxo">
- <div class="etapa"><b>07 QC</b><span>qc_montagem.py · contigs, tamanho, N50, GC, Ns</span></div><div class="seta">▸</div>
- <div class="etapa"><b>08 EMMTYPER</b><span>emmtyper 0.2.0, workflow BLAST, banco emm.fna → tipo/subtipo emm</span></div><div class="seta">▸</div>
- <div class="etapa"><b>09 VFDB</b><span>blastn × VFDB S. pyogenes · identidade ≥ 90% · cobertura ≥ 70%</span></div><div class="seta">▸</div>
- <div class="etapa"><b>10 CONSOLIDAÇÃO</b><span>consolidar_lote.py → epibuilder_metadata.tsv</span></div><div class="seta">▸</div>
- <div class="etapa"><b>11 METADADOS</b><span>juntar_metadados.py → epibuilder_completo.tsv (+ QC e dados clínicos)</span></div><div class="seta">▸</div>
- <div class="etapa"><b>12 LAUDOS</b><span>vigilancia_bot.py + Ollama llama3:8b → laudos.txt</span></div><div class="seta">▸</div>
- <div class="etapa"><b>13 RELATÓRIO</b><span>relatorio_lote.py → relatorio_lote.md</span></div><div class="seta">▸</div>
- <div class="etapa"><b>14 DASHBOARD</b><span>relatorio_html.py → dashboard.html (mapa 3D + gráficos + laudos)</span></div>
-</div>
-<p class="nota"><b>Importante:</b> as etapas 01–06 (<b>Dorado</b>, Flye, Medaka, QUAST/NanoPlot,
-Prokka) são <b>a montante</b> e <b>não são executadas por este repositório</b>.
-Neste servidor, o Dorado <b>não está instalado</b> (verificado em 19/11/2026: ausente no PATH
-e sem imagem Docker); os comandos abaixo são a documentação do fluxo descrito no TCC,
-para serem executados no laboratório de sequenciamento/bioinformática. Existem dados FAST5
-antigos em <code>/resultados/Analises_Paulo/fast5_pass</code> (barcode01–05, jun/2025),
-mas eles <b>não</b> foram usados nesta validação — os 30 assemblies vieram do NCBI RefSeq.
-Este repositório começa no assembly FASTA depositado em <code>entrada/</code>.</p>
+<p class="nota">Etapa opcional: <code>--pcr</code> executa o emmtyper no workflow PCR in silico como conferência complementar.</p>
 </div>
 
-<div class="panel"><h2><span class="id">01</span> Pré-requisitos do ambiente</h2>
-<table class="docs-tabela"><thead><tr><th>Item</th><th>Local / versão</th><th>Verificação</th></tr></thead><tbody>
+<div class="panel"><h2><span class="id">01</span> Ambiente e insumos</h2>
+<table class="docs-tabela"><thead><tr><th>Item</th><th>Local / versão</th><th>Como verificar</th></tr></thead><tbody>
 <tr><td>micromamba</td><td><code>/resultados/Analises_Paulo/micromamba</code></td><td><code>micromamba env list</code></td></tr>
 <tr><td>Ambiente <code>emmtyper</code></td><td>emmtyper 0.2.0 · blastn · isPcr</td><td><code>source config.sh &amp;&amp; emmtyper --version</code></td></tr>
 <tr><td>Docker / Ollama</td><td>container <code>ollama</code> · modelo <code>llama3:8b</code></td><td><code>docker exec ollama ollama list</code></td></tr>
-<tr><td>Bancos locais</td><td><code>emm.fna</code>, <code>VFDB_S.pyogenes.fas</code> + índice BLAST</td><td><code>ls banco_dados/</code></td></tr>
-<tr><td>Vetor do mapa</td><td><code>banco_dados/brasil_geo.json</code> (27 estados, 5.523 municípios)</td><td><code>ls -lh banco_dados/brasil_geo.json</code></td></tr>
+<tr><td>Bancos locais</td><td><code>emm.fna</code> · <code>VFDB_S.pyogenes.fas</code> + índice BLAST</td><td><code>ls banco_dados/</code></td></tr>
+<tr><td>Vetor do mapa</td><td><code>banco_dados/brasil_geo.json</code> — 27 estados, 5.523 municípios</td><td><code>ls -lh banco_dados/brasil_geo.json</code></td></tr>
+<tr><td>Assemblies</td><td>30 FASTA de <i>S. pyogenes</i> em <code>entrada/</code></td><td><code>ls entrada/*.fna | wc -l</code></td></tr>
 </tbody></table>
-{cmd('02', '''
+{cmd('', '''
 cd ~/teste_emmtyper
 source config.sh
-# Em outro clone: cp config.example.sh config.sh e ajuste os caminhos
+# Em um clone novo: cp config.example.sh config.sh e ajuste os caminhos
 micromamba env list
 emmtyper --version
 docker exec ollama ollama list
+ls entrada/*.fna | wc -l
 ''')}
 </div>
 
-<div class="panel"><h2><span class="id">03</span> Comando principal · lote completo</h2>
+<div class="panel"><h2><span class="id">02</span> Execução completa (comando único)</h2>
 {cmd('', '''
 cd ~/teste_emmtyper
 ./pipeline_principal.sh --metadados docs/metadados_exemplo.tsv
 ''')}
-<p class="nota">Executa, em ordem: QC → emmtyper (BLAST) → blastn VFDB → consolidação → junção de metadados → laudos Ollama → relatório → dashboard. Substitua o TSV de metadados pelo arquivo anonimizado real quando as amostras chegarem.</p>
-{cmd('04', '''
-# Teste rápido (sem Ollama): 30/30 amostras, 0 falhas, 18 tipos emm
+<p class="nota">Executa, em ordem: QC → tipagem emm → VFDB → consolidação → metadados → laudos → relatório → páginas HTML. Para amostras reais, substitua o TSV pelo arquivo anonimizado do laboratório.</p>
+{cmd('03', '''
+# Teste rápido, sem Ollama (reaproveita laudos anteriores no dashboard)
 ./pipeline_principal.sh --sem-laudos --metadados docs/metadados_exemplo.tsv
 
 # Uma amostra específica
 ./pipeline_principal.sh --amostra entrada/GCF_000006785.2_ASM678v2_genomic.fna
 
-# Incluir PCR in silico (conferência complementar)
+# Incluir PCR in silico
 ./pipeline_principal.sh --pcr
 
-# Pular QC ou relatório
+# Pular etapas individualmente
 ./pipeline_principal.sh --sem-qc
 ./pipeline_principal.sh --sem-relatorio
 ./pipeline_principal.sh --sem-html
+
+# Ajuda
+./pipeline_principal.sh --help
 ''')}
 </div>
 
-<div class="panel"><h2><span class="id">05</span> Ollama e laudos</h2>
-{cmd('', '''
-docker start ollama                       # se o contêiner estiver parado
-docker exec ollama ollama pull llama3:8b  # se o modelo não estiver baixado
-source config.sh
-"$CONDA_PREFIX/bin/python" scripts/testar_ollama.py
-"$CONDA_PREFIX/bin/python" scripts/vigilancia_bot.py
-''')}
-<p class="nota">A classificação do alerta é determinística (calculada em Python); o modelo apenas redige a narrativa. Laudos são apoio à interpretação, nunca diagnóstico.</p>
-</div>
-
-<div class="panel"><h2><span class="id">06</span> Visualização e páginas do site</h2>
-{cmd('', '''
-# Regera apenas os dois HTMLs a partir dos resultados já calculados
-source config.sh
-"$CONDA_PREFIX/bin/python" scripts/relatorio_html.py
-
-# Saídas:
-#   resultados_consolidados/dashboard.html  → página 01 (resultados e mapa 3D)
-#   resultados_consolidados/pipeline.html   → página 02 (esta página)
-''')}
-{cmd('07', '''
-# Atualizar o vetor geográfico (execução única, se necessário)
-python3 scripts/preparar_mapa_brasil.py /caminho/da/pasta_com_geojson
-
-# Publicar no servidor local (rede interna)
-cd resultados_consolidados && python3 -m http.server 8080 --bind 0.0.0.0
-''')}
-</div>
-
-<div class="panel"><h2><span class="id">08</span> Análise separada de epítopos (EpiBuilder)</h2>
-<p class="nota">Fora do escopo da vigilância: predição de epítopos lineares de células B nos genes de virulência — perspectiva futura da pesquisa.</p>
-{cmd('', '''
-source config.sh
-"$CONDA_PREFIX/bin/python" scripts/preparar_epitopos.py
-# gera analises/epibuilder/VFDB_S_pyogenes_proteins.fasta (333 proteínas)
-
-docker run --rm --entrypoint sh -v epibuilder-data:/tmp/epibuilder \\
-  -v "$PWD/analises/epibuilder":/entrada:ro bioinfoufsc/epibuilder-core:latest \\
-  -c 'cp /entrada/VFDB_S_pyogenes_proteins.fasta /tmp/epibuilder/'
-
-docker run --rm --sysctl net.ipv6.conf.all.disable_ipv6=1 \\
-  --dns 150.162.1.1 --dns 150.162.2.2 \\
-  -v /var/run/docker.sock:/var/run/docker.sock \\
-  -v epibuilder-data:/tmp/epibuilder -e EPIBUILDER_VOLUME=epibuilder-data \\
-  bioinfoufsc/epibuilder-core:latest epibuilder \\
-  --input_file /tmp/epibuilder/VFDB_S_pyogenes_proteins.fasta \\
-  --output /tmp/epibuilder/resultado_vfdb --loc gram_pos
-''')}
-</div>
-
-<div class="panel"><h2><span class="id">09</span> Saídas e reprodutibilidade</h2>
-<table class="docs-tabela"><thead><tr><th>Arquivo</th><th>Conteúdo</th></tr></thead><tbody>
-<tr><td><code>qc_montagem.tsv</code></td><td>métricas de qualidade por assembly</td></tr>
-<tr><td><code>&lt;ID&gt;_emm.stdout.log</code> + <code>&lt;ID&gt;.blast.raw.tsv</code></td><td>tipo emm e alinhamento BLAST bruto preservado</td></tr>
-<tr><td><code>&lt;ID&gt;_vfdb.tsv</code></td><td>hits tabulares do blastn contra VFDB</td></tr>
-<tr><td><code>epibuilder_metadata.tsv</code></td><td>tabela genômica consolidada (ID, emm, virulência)</td></tr>
-<tr><td><code>epibuilder_completo.tsv</code></td><td>tabela + QC + metadados clínicos/epidemiológicos</td></tr>
-<tr><td><code>laudos.txt</code></td><td>laudos individuais via Ollama</td></tr>
-<tr><td><code>relatorio_lote.md</code></td><td>resumo do lote (emm, virulência, alertas, agregações)</td></tr>
-<tr><td><code>dashboard.html</code> / <code>pipeline.html</code></td><td>páginas 01 e 02 do site</td></tr>
-</tbody></table>
-{cmd('10', '''
-cd ~/teste_emmtyper
-emmtyper --version > resultados/emmtyper_version.txt
-micromamba list -n emmtyper > resultados/ambiente_emmtyper.txt
-sha256sum banco_dados/VFDB_S.pyogenes.fas > resultados/vfdb.sha256
-date -Is > resultados/data_execucao.txt
-''')}
-<p class="nota">Validação atual: 30 assemblies RefSeq de S. pyogenes (taxon 1314), 18 tipos emm, 30/30 processadas, 0 falhas, 0 não-alvo. Metadados clínicos de exemplo são sintéticos.</p>
-</div>
-
-<div class="panel"><h2><span class="id">11</span> Etapas a montante em detalhe — NÃO executadas neste repositório</h2>
-<table class="docs-tabela"><thead><tr><th>Ferramenta</th><th>Função</th><th>Entrada → saída</th><th>Status aqui</th></tr></thead><tbody>
-<tr><td><b>Dorado</b></td><td>basecalling Nanopore + demultiplexação</td><td>POD5/FAST5 → BAM/FASTQ</td><td>❌ não instalado; documentado conforme metodologia do TCC</td></tr>
-<tr><td><b>Flye</b></td><td>montagem de novo (leituras longas)</td><td>FASTQ → assembly.fasta</td><td>⚠️ a montante, fora do repo</td></tr>
-<tr><td><b>Medaka</b></td><td>polishing da montagem</td><td>assembly + reads → consensus.fasta</td><td>⚠️ a montante, fora do repo</td></tr>
-<tr><td><b>QUAST / NanoPlot</b></td><td>métricas de qualidade</td><td>FASTA/FASTQ → relatórios</td><td>⚠️ a montante (o QC deste repo é próprio)</td></tr>
-<tr><td><b>Prokka</b></td><td>anotação gênica</td><td>consensus.fasta → GFF/GBK/FAA/FNA</td><td>⚠️ a montante, fora do repo</td></tr>
-</tbody></table>
-{cmd('', '''
-# 1) instalar e baixar o modelo Dorado (R10.4.1, precisão "sup")
-micromamba install -c bioconda -c conda-forge dorado samtools
-dorado download --model dna_r10.4.1_e8.2_400bps_sup@v5.0.0
-
-# 2) converter FAST5 antigo em POD5 (se necessário)
-pod5 convert fast5 /resultados/Analises_Paulo/fast5_pass/ --output /caminho/pod5/
-
-# 3) basecalling (GPU) e demultiplexação (kit Rapid Barcoding SQK-RBK114.24)
-dorado basecaller --device cuda:0 \\
-  dna_r10.4.1_e8.2_400bps_sup@v5.0.0 /caminho/pod5/ > calls.bam
-dorado demux --output-dir /caminho/demux \\
-  --kit-name SQK-RBK114-24 calls.bam
-
-# 4) FASTQ por barcode → entra em Flye
-samtools fastq -T '*' /caminho/demux/barcode01.fastq.gz > barcode01.fastq
-''')}
-<p class="nota">Os comandos acima são <b>modelo</b>: o nome do modelo, o kit e o diretório devem ser ajustados ao run real. O Dorado <b>não</b> participou dos 30 assemblies desta validação — eles foram baixados prontos do NCBI RefSeq.</p>
-{cmd('', '''
-# Montagem, polishing e anotação (exemplo para um barcode)
-flye --nano-hq barcode01.fastq --out-dir flye_barcode01 \\
-  --threads 16 --genome-size 1.9m
-medaka_consensus -i barcode01.fastq -d flye_barcode01/assembly.fasta \\
-  -o medaka_barcode01 -m r10_min_high_accuracy -t 16
-quast.py medaka_barcode01/consensus.fasta -o quast_barcode01
-NanoPlot --fastq barcode01.fastq -o nanoplot_barcode01
-prokka medaka_barcode01/consensus.fasta --outdir prokka_barcode01 \\
-  --prefix AMOSTRA_01
-
-# O FASTA final (consensus.fasta / .fna) é o que entra em entrada/
-''')}
-</div>
-
-<div class="panel"><h2><span class="id">13</span> Pipeline ATUAL em produção — etapas executadas aqui</h2>
-<p class="nota">Esta é a sequência que efetivamente roda hoje, validada em 30 assemblies (30/30 processadas, 0 falhas, 18 tipos emm). Os comandos abaixo são os mesmos do <code>pipeline_principal.sh</code>.</p>
-<table class="docs-tabela"><thead><tr><th>Etapa</th><th>Comando / ferramenta</th><th>Parâmetros e regras</th><th>Produto</th></tr></thead><tbody>
-<tr><td>QC de montagem</td><td><code>scripts/qc_montagem.py</code></td><td>1,5–2,5 Mb · ≤500 contigs · GC 35–42% · Ns ≤1%</td><td><code>qc_montagem.tsv</code></td></tr>
-<tr><td>Tipagem emm</td><td><code>emmtyper --workflow blast</code> v0.2.0</td><td>banco interno <code>emm.fna</code>; <code>--keep</code> preserva o BLAST bruto</td><td><code>&lt;ID&gt;_emm.stdout.log</code> + <code>.blast.raw.tsv</code></td></tr>
-<tr><td>Virulência</td><td><code>blastn</code> × VFDB</td><td>outfmt <code>6 qseqid sseqid pident length slen qcovhsp</code>; <code>-max_target_seqs 5000</code>; pident ≥ 90%; cobertura do gene <code>length/slen</code> ≥ 70%</td><td><code>&lt;ID&gt;_vfdb.tsv</code></td></tr>
-<tr><td>Consolidação</td><td><code>scripts/consolidar_lote.py</code></td><td>parse real de emm + VFDB (sem dados simulados); exclui não-alvo</td><td><code>epibuilder_metadata.tsv</code></td></tr>
-<tr><td>Metadados</td><td><code>scripts/juntar_metadados.py</code></td><td>join por <code>ID_Amostra</code>; amostras sem metadata recebem <code>NA</code></td><td><code>epibuilder_completo.tsv</code></td></tr>
-<tr><td>Laudos</td><td><code>scripts/vigilancia_bot.py</code> + Ollama</td><td><code>llama3:8b</code>, temperatura 0; alerta determinístico em Python; vermelho = toxina superantigênica (speA/C/D/G/H/I/J/K/L/M/ssa/smeZ), amarelo = evasão/adesão, padrão = basal</td><td><code>laudos.txt</code></td></tr>
-<tr><td>Relatório</td><td><code>scripts/relatorio_lote.py</code></td><td>agregações por emm, VFDB, alerta, mês, município, sítio e desfecho</td><td><code>relatorio_lote.md</code></td></tr>
-<tr><td>Páginas HTML</td><td><code>scripts/relatorio_html.py</code></td><td>dashboard com mapa 3D + página de comandos; vetores e CSS/JS embutidos</td><td><code>dashboard.html</code> + <code>pipeline.html</code></td></tr>
-</tbody></table>
+<div class="panel"><h2><span class="id">04</span> Comandos executados por etapa</h2>
 {cmd('', '''
 cd ~/teste_emmtyper && source config.sh
 PY="$CONDA_PREFIX/bin/python"
 
-# 1) QC de montagem (todas as amostras de entrada/*.fna)
+# 1) QC de montagem — todas as amostras
 "$PY" scripts/qc_montagem.py --saida resultados_consolidados/qc_montagem.tsv entrada/*.fna
 
-# 2) Tipagem emm — por amostra, dentro de resultados_blast/.work/<ID>/
+# 2) Tipagem emm (BLAST) — por amostra, em resultados_blast/.work/<ID>/
 emmtyper --workflow blast --blast_db "$EMMTYPER_DB" --keep \\
-  --output "resultados_blast/${ID}_emm.stdout.log" "$GENOMA_ABS"
+  --output "resultados_blast/${{ID}}_emm.stdout.log" "$GENOMA_ABS"
 
-# 3) Virulência VFDB — por amostra
+# 3) Perfil de virulência (VFDB) — por amostra
 blastn -query "$GENOMA_ABS" -db "$VFDB_DB" \\
   -outfmt "6 qseqid sseqid pident length slen qcovhsp" \\
   -max_target_seqs 5000 \\
-  -out "resultados_consolidados/${ID}_vfdb.tsv"
+  -out "resultados_consolidados/${{ID}}_vfdb.tsv"
 
-# 4) PCR in silico (opcional — ativado por --pcr)
+# 4) PCR in silico — opcional (--pcr)
 emmtyper --workflow pcr --blast_db "$EMMTYPER_DB" \\
   --primer-db "$PRIMER_DB" --ispcr-path "$ISPCR_PATH" --keep \\
-  --output "resultados_pcr/${ID}_pcr.stdout.log" "$GENOMA_ABS"
+  --output "resultados_pcr/${{ID}}_pcr.stdout.log" "$GENOMA_ABS"
 
-# 5) Consolidação (resultados reais, sem simulação)
+# 5) Consolidação dos resultados reais (sem dados simulados)
 "$PY" scripts/consolidar_lote.py --entrada-dir entrada \\
   --resultados-blast resultados_blast \\
   --resultados-vfdb resultados_consolidados \\
@@ -1002,7 +872,7 @@ emmtyper --workflow pcr --blast_db "$EMMTYPER_DB" \\
   --qc resultados_consolidados/qc_montagem.tsv \\
   --saida resultados_consolidados/epibuilder_completo.tsv
 
-# 7) Laudos (quando --sem-laudos NÃO é usado)
+# 7) Laudos epidemiológicos (sem --sem-laudos)
 "$PY" scripts/vigilancia_bot.py 2>&1 | tee resultados_consolidados/laudos.txt
 
 # 8) Relatório do lote
@@ -1012,7 +882,7 @@ emmtyper --workflow pcr --blast_db "$EMMTYPER_DB" \\
   --vfdb banco_dados/VFDB_S.pyogenes.fas \\
   --saida resultados_consolidados/relatorio_lote.md
 
-# 9) As duas páginas HTML (geradas juntas)
+# 9) As duas páginas HTML, geradas juntas
 "$PY" scripts/relatorio_html.py \\
   --tabela resultados_consolidados/epibuilder_completo.tsv \\
   --laudos resultados_consolidados/laudos.txt \\
@@ -1020,6 +890,84 @@ emmtyper --workflow pcr --blast_db "$EMMTYPER_DB" \\
   --saida resultados_consolidados/dashboard.html \\
   --min-pident "$VFDB_MIN_PIDENT" --min-qcov "$VFDB_MIN_QCOV"
 ''')}
+</div>
+
+<div class="panel"><h2><span class="id">05</span> Ollama e laudos</h2>
+{cmd('', '''
+docker start ollama
+docker exec ollama ollama pull llama3:8b
+source config.sh
+"$CONDA_PREFIX/bin/python" scripts/testar_ollama.py
+"$CONDA_PREFIX/bin/python" scripts/vigilancia_bot.py
+''')}
+<p class="nota">Modelo <code>llama3:8b</code>, temperatura 0. A tag de alerta é determinística (calculada em Python); o modelo apenas redige a narrativa. Laudos são apoio à interpretação, nunca diagnóstico.</p>
+</div>
+
+<div class="panel"><h2><span class="id">06</span> Visualização e publicação</h2>
+{cmd('', '''
+# Regenerar apenas as duas páginas a partir dos resultados já calculados
+cd ~/teste_emmtyper && source config.sh
+"$CONDA_PREFIX/bin/python" scripts/relatorio_html.py
+
+# Servir localmente na rede do laboratório
+cd resultados_consolidados && python3 -m http.server 8080 --bind 0.0.0.0
+''')}
+<p class="nota"><code>dashboard.html</code> traz resultados, gráficos, mapa 3D do Brasil e laudos;
+<code>pipeline.html</code> traz este fluxo e os comandos. Ambos são autocontidos (CSS/JS/vetores embutidos).</p>
+</div>
+
+<div class="panel"><h2><span class="id">07</span> Análise complementar executada: epítopos (EpiBuilder)</h2>
+<p class="nota">Análise separada, já executada aqui: 333 proteínas traduzidas do VFDB e 1.099 epítopos preditos. Não faz parte da vigilância de rotina.</p>
+{cmd('', '''
+source config.sh
+"$CONDA_PREFIX/bin/python" scripts/preparar_epitopos.py
+# analises/epibuilder/VFDB_S_pyogenes_proteins.fasta + proteins_metadata.tsv
+
+docker run --rm --sysctl net.ipv6.conf.all.disable_ipv6=1 \\
+  --dns 150.162.1.1 --dns 150.162.2.2 \\
+  -v /var/run/docker.sock:/var/run/docker.sock \\
+  -v epibuilder-data:/tmp/epibuilder -e EPIBUILDER_VOLUME=epibuilder-data \\
+  bioinfoufsc/epibuilder-core:latest epibuilder \\
+  --input_file /tmp/epibuilder/VFDB_S_pyogenes_proteins.fasta \\
+  --output /tmp/epibuilder/resultado_vfdb --loc gram_pos
+''')}
+<p class="nota">Documentação completa: <code>docs/epibuilder_epitopos.md</code>.</p>
+</div>
+
+<div class="panel"><h2><span class="id">08</span> Saídas do pipeline</h2>
+<table class="docs-tabela"><thead><tr><th>Arquivo</th><th>Conteúdo</th></tr></thead><tbody>
+<tr><td><code>qc_montagem.tsv</code></td><td>contigs, tamanho, N50, GC e Ns por amostra</td></tr>
+<tr><td><code>&lt;ID&gt;_emm.stdout.log</code> · <code>&lt;ID&gt;.blast.raw.tsv</code></td><td>tipo emm e BLAST bruto</td></tr>
+<tr><td><code>&lt;ID&gt;_vfdb.tsv</code></td><td>hits tabulares do blastn contra VFDB</td></tr>
+<tr><td><code>epibuilder_metadata.tsv</code></td><td>tabela genômica consolidada (ID, emm, virulência)</td></tr>
+<tr><td><code>epibuilder_completo.tsv</code></td><td>tabela + QC + metadados clínicos/epidemiológicos</td></tr>
+<tr><td><code>laudos.txt</code></td><td>laudos individuais via Ollama</td></tr>
+<tr><td><code>relatorio_lote.md</code></td><td>distribuição emm, virulência, alertas e agregações</td></tr>
+<tr><td><code>dashboard.html</code> · <code>pipeline.html</code></td><td>páginas 01 e 02 do site</td></tr>
+</tbody></table>
+</div>
+
+<div class="panel"><h2><span class="id">09</span> Validação atual e conferência rápida</h2>
+<p class="nota">Última execução completa: <b>30/30 amostras processadas, 0 falhas, 0 não-alvo, 18 tipos emm, QC 30/30 OK, 30 laudos gerados</b>.</p>
+{cmd('', '''
+cd ~/teste_emmtyper
+wc -l resultados_consolidados/epibuilder_completo.tsv          # 31
+tail -n +2 resultados_consolidados/epibuilder_completo.tsv | cut -f2 | sort -u | wc -l   # 18
+grep -c "OK" resultados_consolidados/qc_montagem.tsv           # 30
+grep -c "PROCESSANDO AMOSTRA" resultados_consolidados/laudos.txt  # 30
+grep -c "NAO_S_PYOGENES" resultados_consolidados/epibuilder_completo.tsv  # 0
+''')}
+</div>
+
+<div class="panel"><h2><span class="id">10</span> Reprodutibilidade</h2>
+{cmd('', '''
+cd ~/teste_emmtyper
+emmtyper --version > resultados/emmtyper_version.txt
+micromamba list -n emmtyper > resultados/ambiente_emmtyper.txt
+sha256sum banco_dados/VFDB_S.pyogenes.fas > resultados/vfdb.sha256
+date -Is > resultados/data_execucao.txt
+''')}
+<p class="nota">Os 30 genomas são assemblies públicos de <i>S. pyogenes</i> obtidos pela NCBI Datasets API (taxon 1314, RefSeq/GCF, Complete Genome, sem duplicatas). Os metadados clínicos de exemplo são sintéticos e estão em <code>docs/metadados_exemplo.tsv</code>.</p>
 </div>
 <footer>CIGenS/SC · UFSC · LACEN/SC · DIVE/SC · emmtyper 0.2.0 (BLAST) · VFDB S. pyogenes ·
 laudos via Ollama llama3:8b são apoio à interpretação, não diagnóstico.</footer>
