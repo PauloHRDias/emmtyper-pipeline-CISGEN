@@ -699,7 +699,220 @@ window.addEventListener('DOMContentLoaded',()=>{
 """
 
 
-def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov, geo, logo=""):
+PIPELINE_CSS = """
+.nav-btn{position:absolute;right:150px;top:20px;border:1px solid var(--cyan);color:var(--cyan);
+padding:7px 11px;font:10px var(--mono);letter-spacing:1.2px;text-decoration:none;background:#fff}
+.nav-btn:hover{background:#e9f7ff;box-shadow:0 0 10px rgba(0,184,230,.25)}
+.nav-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.nav-bar a{font:11px var(--mono);letter-spacing:1.4px;color:var(--blue);text-decoration:none;
+border:1px solid var(--line);padding:8px 12px;background:#fff}
+.nav-bar a:hover{border-color:var(--cyan);background:#e9f7ff}
+.grupo-titulo{font:10px var(--mono);letter-spacing:2px;color:var(--muted);text-transform:uppercase;
+margin:16px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.fluxo{display:flex;flex-wrap:wrap;align-items:stretch;gap:7px}
+.etapa{flex:1 1 130px;min-width:120px;border:1px solid var(--line);background:#f8fcff;padding:10px;
+position:relative}
+.etapa::before{content:"";position:absolute;left:-1px;top:-1px;width:8px;height:8px;
+border-left:2px solid var(--cyan);border-top:2px solid var(--cyan)}
+.etapa b{display:block;font:11px var(--mono);letter-spacing:1px;color:#0a4f85;margin-bottom:4px}
+.etapa span{font:10px/1.5 -apple-system,"Segoe UI",sans-serif;color:var(--muted)}
+.seta{align-self:center;color:var(--cyan);font:16px var(--mono)}
+.cmd{position:relative;margin:12px 0 18px}
+.cmd .copiar{position:absolute;right:8px;top:8px;z-index:2;font:9px var(--mono);letter-spacing:1.2px;
+border:1px solid var(--cyan);color:var(--cyan);background:#fff;padding:4px 8px;cursor:pointer}
+.cmd pre{margin:0;background:#f2f8fd;border:1px solid var(--line);border-left:3px solid var(--cyan);
+padding:14px 14px 14px 16px;overflow:auto;font:11px/1.7 var(--mono);color:#0b2b45}
+.cmd code{white-space:pre}
+.nota{font:11px/1.7 -apple-system,"Segoe UI",sans-serif;color:var(--muted);margin:8px 0 0}
+.docs-tabela{width:100%;border-collapse:collapse;font:11px/1.6 -apple-system,"Segoe UI",sans-serif}
+.docs-tabela th,.docs-tabela td{border-bottom:1px solid #e3eef7;padding:7px 9px;text-align:left;vertical-align:top}
+.docs-tabela th{font:10px var(--mono);letter-spacing:1.2px;color:#0a4f85;background:#eef7ff}
+@media(max-width:760px){.nav-btn{position:static;display:inline-block;margin-top:8px}}
+"""
+
+PIPELINE_JS = r"""
+function copiar(btn){
+  const codigo=btn.parentNode.querySelector('code').textContent;
+  function ok(){btn.textContent='✓ COPIADO';setTimeout(()=>{btn.textContent='COPIAR';},1600);}
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(codigo).then(ok).catch(()=>fallback(codigo,ok));
+  } else { fallback(codigo,ok); }
+}
+function fallback(txt,ok){
+  const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);
+  ta.select();try{document.execCommand('copy');ok();}catch(e){}document.body.removeChild(ta);
+}
+"""
+
+
+def gerar_html_pipeline(logo, dashboard_url, pipeline_url):
+    """Segunda página: fluxo analítico e comandos operacionais, no mesmo estilo HUD."""
+    agora = datetime.now().strftime("%d/%m/%Y %H:%M")
+    def cmd(titulo, texto):
+        return (f'<h2><span class="id">{titulo}</span></h2>'
+                f'<div class="cmd"><button class="copiar" onclick="copiar(this)">COPIAR</button>'
+                f'<pre><code>{html.escape(texto.strip())}</code></pre></div>')
+    return f"""<!doctype html>
+<html lang="pt-br"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CIGenS/SC — Pipeline analítica</title>
+<style>{CSS}{PIPELINE_CSS}</style></head><body>
+<div class="scan"></div>
+<header><div class="cabecalho-conteudo">
+<div class="logo-ufsc" title="Universidade Federal de Santa Catarina">{logo}</div>
+<div><div class="overline">CIGenS // Documentação operacional · SYS.02</div>
+<h1>PIPELINE <i>ANALÍTICA COMPLETA</i></h1>
+<p>FLUXO DE PROCESSAMENTO E COMANDOS DE EXECUÇÃO · ATUALIZADO EM {agora}</p></div>
+</div><div class="status"><b></b>SISTEMA ONLINE</div>
+<a class="nav-btn" href="{html.escape(dashboard_url)}">← DASHBOARD</a><div class="hud-line"></div></header>
+<main>
+<div class="nav-bar"><a href="{html.escape(dashboard_url)}">← VOLTAR AO DASHBOARD DE RESULTADOS</a>
+<span class="lbl">PÁGINA 02 / 02 · OPERAÇÃO E REPRODUÇÃO</span></div>
+
+<div class="panel"><h2><span class="id">00</span> Fluxo analítico completo</h2>
+<div class="grupo-titulo">A montante · sequenciamento → assembly (fora do repositório)</div>
+<div class="fluxo">
+ <div class="etapa"><b>01 CORTE / DNA</b><span>Nanopore MinION · Rapid Barcoding SQK-RBK114.24 · cells R10.4.1</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>02 DORADO</b><span>basecalling e controle de qualidade das leituras</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>03 FLYE</b><span>montagem de novo do genoma</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>04 MEDAKA</b><span>polishing da montagem</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>05 QUAST / NANOPLOT</b><span>N50, GC, cobertura e métricas de qualidade</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>06 PROKKA</b><span>anotação gênica (CDS, proteínas, elementos não codificantes)</span></div>
+</div>
+<div class="grupo-titulo">Núcleo do repositório · assembly → resultado publicável</div>
+<div class="fluxo">
+ <div class="etapa"><b>07 QC</b><span>qc_montagem.py · contigs, tamanho, N50, GC, Ns</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>08 EMMTYPER</b><span>emmtyper 0.2.0, workflow BLAST, banco emm.fna → tipo/subtipo emm</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>09 VFDB</b><span>blastn × VFDB S. pyogenes · identidade ≥ 90% · cobertura ≥ 70%</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>10 CONSOLIDAÇÃO</b><span>consolidar_lote.py → epibuilder_metadata.tsv</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>11 METADADOS</b><span>juntar_metadados.py → epibuilder_completo.tsv (+ QC e dados clínicos)</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>12 LAUDOS</b><span>vigilancia_bot.py + Ollama llama3:8b → laudos.txt</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>13 RELATÓRIO</b><span>relatorio_lote.py → relatorio_lote.md</span></div><div class="seta">▸</div>
+ <div class="etapa"><b>14 DASHBOARD</b><span>relatorio_html.py → dashboard.html (mapa 3D + gráficos + laudos)</span></div>
+</div>
+<p class="nota">A montagem/anotação (etapas 01–06) ocorre no laboratório de bioinformática; este repositório começa no assembly FASTA depositado em <code>entrada/</code>.</p>
+</div>
+
+<div class="panel"><h2><span class="id">01</span> Pré-requisitos do ambiente</h2>
+<table class="docs-tabela"><thead><tr><th>Item</th><th>Local / versão</th><th>Verificação</th></tr></thead><tbody>
+<tr><td>micromamba</td><td><code>/resultados/Analises_Paulo/micromamba</code></td><td><code>micromamba env list</code></td></tr>
+<tr><td>Ambiente <code>emmtyper</code></td><td>emmtyper 0.2.0 · blastn · isPcr</td><td><code>source config.sh &amp;&amp; emmtyper --version</code></td></tr>
+<tr><td>Docker / Ollama</td><td>container <code>ollama</code> · modelo <code>llama3:8b</code></td><td><code>docker exec ollama ollama list</code></td></tr>
+<tr><td>Bancos locais</td><td><code>emm.fna</code>, <code>VFDB_S.pyogenes.fas</code> + índice BLAST</td><td><code>ls banco_dados/</code></td></tr>
+<tr><td>Vetor do mapa</td><td><code>banco_dados/brasil_geo.json</code> (27 estados, 5.523 municípios)</td><td><code>ls -lh banco_dados/brasil_geo.json</code></td></tr>
+</tbody></table>
+{cmd('02', '''
+cd ~/teste_emmtyper
+source config.sh
+# Em outro clone: cp config.example.sh config.sh e ajuste os caminhos
+micromamba env list
+emmtyper --version
+docker exec ollama ollama list
+''')}
+</div>
+
+<div class="panel"><h2><span class="id">03</span> Comando principal · lote completo</h2>
+{cmd('', '''
+cd ~/teste_emmtyper
+./pipeline_principal.sh --metadados docs/metadados_exemplo.tsv
+''')}
+<p class="nota">Executa, em ordem: QC → emmtyper (BLAST) → blastn VFDB → consolidação → junção de metadados → laudos Ollama → relatório → dashboard. Substitua o TSV de metadados pelo arquivo anonimizado real quando as amostras chegarem.</p>
+{cmd('04', '''
+# Teste rápido (sem Ollama): 30/30 amostras, 0 falhas, 18 tipos emm
+./pipeline_principal.sh --sem-laudos --metadados docs/metadados_exemplo.tsv
+
+# Uma amostra específica
+./pipeline_principal.sh --amostra entrada/GCF_000006785.2_ASM678v2_genomic.fna
+
+# Incluir PCR in silico (conferência complementar)
+./pipeline_principal.sh --pcr
+
+# Pular QC ou relatório
+./pipeline_principal.sh --sem-qc
+./pipeline_principal.sh --sem-relatorio
+./pipeline_principal.sh --sem-html
+''')}
+</div>
+
+<div class="panel"><h2><span class="id">05</span> Ollama e laudos</h2>
+{cmd('', '''
+docker start ollama                       # se o contêiner estiver parado
+docker exec ollama ollama pull llama3:8b  # se o modelo não estiver baixado
+source config.sh
+"$CONDA_PREFIX/bin/python" scripts/testar_ollama.py
+"$CONDA_PREFIX/bin/python" scripts/vigilancia_bot.py
+''')}
+<p class="nota">A classificação do alerta é determinística (calculada em Python); o modelo apenas redige a narrativa. Laudos são apoio à interpretação, nunca diagnóstico.</p>
+</div>
+
+<div class="panel"><h2><span class="id">06</span> Visualização e páginas do site</h2>
+{cmd('', '''
+# Regera apenas os dois HTMLs a partir dos resultados já calculados
+source config.sh
+"$CONDA_PREFIX/bin/python" scripts/relatorio_html.py
+
+# Saídas:
+#   resultados_consolidados/dashboard.html  → página 01 (resultados e mapa 3D)
+#   resultados_consolidados/pipeline.html   → página 02 (esta página)
+''')}
+{cmd('07', '''
+# Atualizar o vetor geográfico (execução única, se necessário)
+python3 scripts/preparar_mapa_brasil.py /caminho/da/pasta_com_geojson
+
+# Publicar no servidor local (rede interna)
+cd resultados_consolidados && python3 -m http.server 8080 --bind 0.0.0.0
+''')}
+</div>
+
+<div class="panel"><h2><span class="id">08</span> Análise separada de epítopos (EpiBuilder)</h2>
+<p class="nota">Fora do escopo da vigilância: predição de epítopos lineares de células B nos genes de virulência — perspectiva futura da pesquisa.</p>
+{cmd('', '''
+source config.sh
+"$CONDA_PREFIX/bin/python" scripts/preparar_epitopos.py
+# gera analises/epibuilder/VFDB_S_pyogenes_proteins.fasta (333 proteínas)
+
+docker run --rm --entrypoint sh -v epibuilder-data:/tmp/epibuilder \\
+  -v "$PWD/analises/epibuilder":/entrada:ro bioinfoufsc/epibuilder-core:latest \\
+  -c 'cp /entrada/VFDB_S_pyogenes_proteins.fasta /tmp/epibuilder/'
+
+docker run --rm --sysctl net.ipv6.conf.all.disable_ipv6=1 \\
+  --dns 150.162.1.1 --dns 150.162.2.2 \\
+  -v /var/run/docker.sock:/var/run/docker.sock \\
+  -v epibuilder-data:/tmp/epibuilder -e EPIBUILDER_VOLUME=epibuilder-data \\
+  bioinfoufsc/epibuilder-core:latest epibuilder \\
+  --input_file /tmp/epibuilder/VFDB_S_pyogenes_proteins.fasta \\
+  --output /tmp/epibuilder/resultado_vfdb --loc gram_pos
+''')}
+</div>
+
+<div class="panel"><h2><span class="id">09</span> Saídas e reprodutibilidade</h2>
+<table class="docs-tabela"><thead><tr><th>Arquivo</th><th>Conteúdo</th></tr></thead><tbody>
+<tr><td><code>qc_montagem.tsv</code></td><td>métricas de qualidade por assembly</td></tr>
+<tr><td><code>&lt;ID&gt;_emm.stdout.log</code></td><td>saída bruta do emmtyper (tipo emm)</td></tr>
+<tr><td><code>&lt;ID&gt;_vfdb.tsv</code></td><td>hits tabulares do blastn contra VFDB</td></tr>
+<tr><td><code>epibuilder_metadata.tsv</code></td><td>tabela genômica consolidada (ID, emm, virulência)</td></tr>
+<tr><td><code>epibuilder_completo.tsv</code></td><td>tabela + QC + metadados clínicos/epidemiológicos</td></tr>
+<tr><td><code>laudos.txt</code></td><td>laudos individuais via Ollama</td></tr>
+<tr><td><code>relatorio_lote.md</code></td><td>resumo do lote (emm, virulência, alertas, agregações)</td></tr>
+<tr><td><code>dashboard.html</code> / <code>pipeline.html</code></td><td>páginas 01 e 02 do site</td></tr>
+</tbody></table>
+{cmd('10', '''
+cd ~/teste_emmtyper
+emmtyper --version > resultados/emmtyper_version.txt
+micromamba list -n emmtyper > resultados/ambiente_emmtyper.txt
+sha256sum banco_dados/VFDB_S.pyogenes.fas > resultados/vfdb.sha256
+date -Is > resultados/data_execucao.txt
+''')}
+<p class="nota">Validação atual: 30 assemblies RefSeq de S. pyogenes (taxon 1314), 18 tipos emm, 30/30 processadas, 0 falhas, 0 não-alvo. Metadados clínicos de exemplo são sintéticos.</p>
+</div>
+<footer>CIGenS/SC · UFSC · LACEN/SC · DIVE/SC · emmtyper 0.2.0 (BLAST) · VFDB S. pyogenes ·
+laudos via Ollama llama3:8b são apoio à interpretação, não diagnóstico.</footer>
+</main>
+<script>{PIPELINE_JS}</script></body></html>
+"""
+
+
+def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov, geo, logo="", pipeline_url="pipeline.html"):
     payload = json.dumps(dados, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
     geo_json = json.dumps(geo, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c") if geo else "{}"
     agora = datetime.now().strftime("%d/%m/%Y %H:%M")
@@ -717,7 +930,8 @@ def gerar_html(dados, caminho_tabela, caminho_laudos, minimo_genes, minimo_cov, 
 <div><div class="overline">CIGenS // Módulo de vigilância genômica · SYS.01</div>
 <h1>VIGILÂNCIA DE <i>STREPTOCOCCUS PYOGENES</i></h1>
 <p>PAINEL DE LEITURA EPIDEMIOLÓGICA · GERADO EM {agora} · FONTE: {html.escape(Path(caminho_tabela).name).upper()}{modelo.upper()}</p></div>
-</div><div class="status"><b></b>SISTEMA ONLINE</div><div class="hud-line"></div></header>
+</div><div class="status"><b></b>SISTEMA ONLINE</div>
+<a class="nav-btn" href="{html.escape(pipeline_url)}">📖 PIPELINE</a><div class="hud-line"></div></header>
 <main>
 <div class="cards">
  <div class="card"><div class="num" id="k-amostras">0</div><div class="lbl">Amostras no lote</div></div>
@@ -785,6 +999,9 @@ def main():
     parser.add_argument("--geo", default="banco_dados/brasil_geo.json")
     parser.add_argument("--logo", default="docs/logo_ufsc.svg")
     parser.add_argument("--saida", default="resultados_consolidados/dashboard.html")
+    parser.add_argument("--saida-pipeline", default="resultados_consolidados/pipeline.html")
+    parser.add_argument("--dashboard-url", default="dashboard.html")
+    parser.add_argument("--pipeline-url", default="pipeline.html")
     parser.add_argument("--min-pident", default="90")
     parser.add_argument("--min-qcov", default="70")
     args = parser.parse_args()
@@ -804,8 +1021,13 @@ def main():
     dados = construir_dados(carregar_tabela(tabela), carregar_laudos(laudos), carregar_vfdb(args.vfdb))
     saida = Path(args.saida)
     saida.parent.mkdir(parents=True, exist_ok=True)
-    saida.write_text(gerar_html(dados, tabela, laudos, args.min_pident, args.min_qcov, geo, logo), encoding="utf-8")
+    saida.write_text(gerar_html(dados, tabela, laudos, args.min_pident, args.min_qcov,
+                                geo, logo, args.pipeline_url), encoding="utf-8")
+    saida_pipeline = Path(args.saida_pipeline)
+    saida_pipeline.parent.mkdir(parents=True, exist_ok=True)
+    saida_pipeline.write_text(gerar_html_pipeline(logo, args.dashboard_url, args.pipeline_url), encoding="utf-8")
     print(f"Dashboard gerado: {saida}")
+    print(f"Página da pipeline gerada: {saida_pipeline}")
     print(f"Amostras: {len(dados)} | com laudo: {sum(1 for d in dados if d['laudo'])}")
 
 

@@ -153,7 +153,7 @@ em biologia, com referências em ABNT, relevância para o TCC e ordem de leitura
 | `scripts/consolidar_lote.py` | Monta a tabela final com emm e virulência **reais**. |
 | `scripts/juntar_metadados.py` | Junta QC e metadados clínico-epidemiológicos por `ID_Amostra`. |
 | `scripts/relatorio_lote.py` | Gera o relatório Markdown resumido do lote. |
-| `scripts/relatorio_html.py` | Gera o dashboard HTML autocontido (visualização offline). |
+| `scripts/relatorio_html.py` | Gera as duas páginas HTML autocontidas: dashboard (`dashboard.html`) e pipeline/comandos (`pipeline.html`). |
 | `scripts/preparar_mapa.py` | Prepara o vetor simplificado de SC (execução única). |
 | `scripts/preparar_mapa_brasil.py` | Prepara estados + municípios do Brasil para o mapa 3D (execução única). |
 | `scripts/prepara_epibuilder.py` | Parsers de emm/VFDB e geração individual da tabela. |
@@ -192,14 +192,17 @@ teste_emmtyper/
   (quando `--metadados` é usado).
 - `resultados_consolidados/laudos.txt` — laudos gerados pelo Ollama.
 - `resultados_consolidados/relatorio_lote.md` — relatório resumido do lote.
-- `resultados_consolidados/dashboard.html` — painel interativo para visualização (abrir no navegador).
+- `resultados_consolidados/dashboard.html` — página 01: painel de resultados e mapa 3D.
+- `resultados_consolidados/pipeline.html` — página 02: fluxo analítico completo e comandos de execução.
 - `logs/<ID>_*.stderr.log` — erros e avisos por etapa.
 
 ## Visualização (dashboard HTML)
 
-O arquivo `resultados_consolidados/dashboard.html` é gerado automaticamente e
-contém **CSS e JavaScript embutidos**: funciona offline, sem servidor nem
-dependências, e pode ser aberto no navegador ou anexado a um e-mail.
+As páginas `resultados_consolidados/dashboard.html` (resultados) e
+`resultados_consolidados/pipeline.html` (processo e comandos) são geradas
+automaticamente e contêm **CSS e JavaScript embutidos**: funcionam offline, sem
+servidor nem dependências, e podem ser abertas no navegador ou anexadas a um
+e-mail. Cada uma tem um botão de navegação para a outra.
 
 O painel mostra:
 
